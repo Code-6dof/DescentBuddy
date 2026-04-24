@@ -58,6 +58,27 @@ a = Analysis(
     noarchive=False,
 )
 
+_drop_lib_prefixes = (
+    'libQt6Quick',
+    'libQt6Qml',
+    'libQt6QmlModels',
+    'libQt6QmlWorkerScript',
+    'libQt6QuickTemplates2',
+    'libQt6QuickWidgets',
+    'libKF6BreezeIcons',
+    'libkwin',
+    'liblapack',
+    'libSvtAv1Enc',
+    'libx265',
+    'libcodec2',
+    'libplacebo',
+    'libaom',
+)
+a.binaries = [
+    b for b in a.binaries
+    if not any(b[0].startswith(p) for p in _drop_lib_prefixes)
+]
+
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
@@ -83,7 +104,7 @@ coll = COLLECT(
     a.binaries,
     a.zipfiles,
     a.datas,
-    strip=False,
+    strip=True,
     upx=False,
     name='descentbuddy',
 )
