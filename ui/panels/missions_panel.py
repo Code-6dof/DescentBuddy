@@ -132,7 +132,7 @@ class _MissionDetailDialog(QDialog):
         if not img_loaded:
             self._image_label.setText("Loading...")
             image_url = entry.get("image_url", "")
-            self._image_thread = _ImageLoadThread(entry["id"], image_url, self)
+            self._image_thread = _ImageLoadThread(entry["id"], image_url)
             self._image_thread.image_ready.connect(self._on_image_ready)
             self._image_thread.finished.connect(self._on_image_thread_done)
             self._image_thread.start()
@@ -245,6 +245,8 @@ class _MissionDetailDialog(QDialog):
     def closeEvent(self, event) -> None:
         if self._image_thread is not None:
             self._image_thread.blockSignals(True)
+            self._image_thread.image_ready.disconnect()
+            self._image_thread.finished.disconnect()
         super().closeEvent(event)
 
 
@@ -260,6 +262,7 @@ class MissionsPanel(QWidget):
         self._search_text = ""
         self._game: str = "d1"
         self._dialog_open = False
+        self._image_threads: list = []
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -469,6 +472,10 @@ class MissionsPanel(QWidget):
         archive = self._local_archive()
         missions_dir = self._missions_dir()
         dialog = _MissionDetailDialog(entry, archive, missions_dir, self)
+        if dialog._image_thread is not None:
+            thread = dialog._image_thread
+            self._image_threads.append(thread)
+            thread.finished.connect(lambda t=thread: self._image_threads.remove(t) if t in self._image_threads else None)
         dialog.exec()
         self._dialog_open = False
         if dialog.install_was_requested:
