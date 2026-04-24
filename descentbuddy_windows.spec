@@ -14,6 +14,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('data/notifications', 'data/notifications'),
+        ('build/descentbuddy.png', '.'),
     ],
     hiddenimports=[
         'PyQt6',
@@ -74,7 +75,7 @@ exe = EXE(
     strip=False,
     upx=False,
     console=False,
-    icon=None,
+    icon='build/descentbuddy.ico',
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

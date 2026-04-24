@@ -8,6 +8,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('data/notifications', 'data/notifications'),
+        ('build/descentbuddy.png', '.'),
     ],
     hiddenimports=[
         'PyQt6',
