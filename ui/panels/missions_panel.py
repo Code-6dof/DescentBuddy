@@ -242,6 +242,11 @@ class _MissionDetailDialog(QDialog):
         if not self._image_label.pixmap() or self._image_label.pixmap().isNull():
             self._image_label.setText("No image")
 
+    def closeEvent(self, event) -> None:
+        if self._image_thread is not None:
+            self._image_thread.blockSignals(True)
+        super().closeEvent(event)
+
 
 class MissionsPanel(QWidget):
     def __init__(self, parent=None) -> None:
@@ -254,6 +259,7 @@ class MissionsPanel(QWidget):
         self._filter_mode = "ALL"
         self._search_text = ""
         self._game: str = "d1"
+        self._dialog_open = False
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -456,15 +462,15 @@ class MissionsPanel(QWidget):
         self._table.setRowHeight(row, 30)
 
     def _on_row_clicked(self, row: int, _col: int) -> None:
-        if row >= len(self._displayed_missions):
+        if self._dialog_open or row >= len(self._displayed_missions):
             return
+        self._dialog_open = True
         entry = self._displayed_missions[row]
         archive = self._local_archive()
         missions_dir = self._missions_dir()
-
         dialog = _MissionDetailDialog(entry, archive, missions_dir, self)
         dialog.exec()
-
+        self._dialog_open = False
         if dialog.install_was_requested:
             self._start_install(entry)
 
