@@ -29,6 +29,15 @@ def detect_version(executable_path: str) -> str:
     if path.suffix.lower() == ".appimage":
         env["APPIMAGE_EXTRACT_AND_RUN"] = "1"
 
+    if sys.platform != "win32":
+        # Prevent the game from opening a window during version detection.
+        # SDL checks SDL_VIDEODRIVER first; setting it to "dummy" keeps it
+        # headless.  Clearing DISPLAY/WAYLAND_DISPLAY adds a second layer of
+        # protection for non-SDL display init.
+        env["SDL_VIDEODRIVER"] = "dummy"
+        env["DISPLAY"] = ""
+        env["WAYLAND_DISPLAY"] = ""
+
     for flag in ("--version", "-version", "-v"):
         try:
             result = subprocess.run(
