@@ -23,6 +23,7 @@ from PyQt6.QtWidgets import (
 
 from core.app_config import load_config, save_config
 from core.appimage_icon import extract_appimage_icon
+from core.discord_presence import clear_presence, update_presence
 from core.game_detector import Game, detect_game, display_name
 from core.game_launcher import GameLauncher
 from core.playtime import add_seconds, format_playtime, get_total_seconds
@@ -394,6 +395,7 @@ class _GameCard(QWidget):
         self._select_btn.setEnabled(False)
         self._set_status("running", "Running")
         self._poll_timer.start()
+        update_presence(display_name(self._game), time.time())
         QTimer.singleShot(800, self._check_launch_survived)
 
     def _check_launch_survived(self) -> None:
@@ -409,6 +411,7 @@ class _GameCard(QWidget):
 
     def _set_status_idle(self) -> None:
         self._poll_timer.stop()
+        clear_presence()
         if self._session_start > 0:
             elapsed = int(time.monotonic() - self._session_start)
             self._session_start = 0.0
