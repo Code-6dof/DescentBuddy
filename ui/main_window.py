@@ -17,7 +17,6 @@ from PyQt6.QtWidgets import (
 from ui.sidebar import Sidebar
 from ui.panels.launch_panel import LaunchPanel
 from ui.panels.recent_panel import RecentPanel
-from ui.panels.netlog_panel import NetlogPanel
 from ui.panels.missions_panel import MissionsPanel
 from ui.panels.demos_panel import DemosPanel
 from ui.panels.community_panel import CommunityPanel
@@ -62,7 +61,6 @@ class MainWindow(QMainWindow):
         self._panels = [
             LaunchPanel(),
             RecentPanel(),
-            NetlogPanel(),
             MissionsPanel(),
             DemosPanel(),
             CommunityPanel(),
@@ -75,13 +73,11 @@ class MainWindow(QMainWindow):
 
         launch_panel: LaunchPanel = self._panels[0]
         recent_panel: RecentPanel = self._panels[1]
-        netlog_panel: NetlogPanel = self._panels[2]
-        missions_panel: MissionsPanel = self._panels[3]
-        demos_panel: DemosPanel = self._panels[4]
-        community_panel: CommunityPanel = self._panels[5]
+        missions_panel: MissionsPanel = self._panels[2]
+        demos_panel: DemosPanel = self._panels[3]
+        community_panel: CommunityPanel = self._panels[4]
 
         launch_panel.game_changed.connect(recent_panel.on_game_changed)
-        launch_panel.game_changed.connect(netlog_panel.on_game_changed)
         launch_panel.game_changed.connect(missions_panel.on_game_changed)
         launch_panel.game_changed.connect(demos_panel.on_game_changed)
 
@@ -93,7 +89,7 @@ class MainWindow(QMainWindow):
         community_panel.user_signed_out.connect(self._notification_inbox.clear_user)
         self._notification_inbox.open_url_in_rdl.connect(self._open_url_in_rdl)
 
-        self._rdl_panel: RdlPanel = self._panels[6]
+        self._rdl_panel: RdlPanel = self._panels[5]
 
         app = QApplication.instance()
         assert app is not None
@@ -111,12 +107,12 @@ class MainWindow(QMainWindow):
         self._sidebar.panel_changed.connect(self._on_panel_changed)
 
     def _on_panel_changed(self, index: int) -> None:
-        if index == 3:
+        if index == 2:
             self._missions_panel.start_background_update()
 
     def _open_url_in_rdl(self, url: str) -> None:
         self._rdl_panel.navigate(url)
-        self._sidebar.setCurrentRow(6)
+        self._sidebar.setCurrentRow(5)
 
     # ------------------------------------------------------------------
     # Internal helpers

@@ -9,7 +9,6 @@ from PyQt6.QtCore import Qt
 _NAV_ITEMS = [
     "LAUNCH",
     "RECENT",
-    "NETLOG",
     "MISSIONS",
     "DEMOS",
     "COMMUNITY",
