@@ -146,6 +146,15 @@ class SettingsDialog(QDialog):
         self._advanced_container.setVisible(False)
         layout.addWidget(self._advanced_container)
 
+        layout.addSpacing(20)
+
+        divider2 = QFrame()
+        divider2.setFrameShape(QFrame.Shape.HLine)
+        layout.addWidget(divider2)
+        layout.addSpacing(16)
+
+        self._build_discord_section(layout)
+
         layout.addStretch()
         scroll.setWidget(content)
         outer.addWidget(scroll)
@@ -503,6 +512,60 @@ class SettingsDialog(QDialog):
     # ------------------------------------------------------------------
     # Row builders
     # ------------------------------------------------------------------
+
+    def _build_discord_section(self, layout: QVBoxLayout) -> None:
+        heading = QLabel("DISCORD")
+        heading.setObjectName("section-label")
+        layout.addWidget(heading)
+
+        layout.addSpacing(6)
+
+        row = QWidget()
+        row.setObjectName("settings-row")
+        row_layout = QHBoxLayout(row)
+        row_layout.setContentsMargins(8, 5, 8, 5)
+        row_layout.setSpacing(8)
+
+        label = QLabel("Show Rich Presence while playing")
+        label.setToolTip(
+            "When enabled, your Discord status will show which game you are playing\n"
+            "while a game is running through DescentBuddy."
+        )
+        row_layout.addWidget(label, 1)
+
+        self._discord_checkbox = QCheckBox()
+        self._discord_checkbox.setChecked(
+            load_config().get("discord_presence_enabled", True)
+        )
+        self._discord_checkbox.stateChanged.connect(self._on_discord_toggled)
+        row_layout.addWidget(self._discord_checkbox)
+
+        layout.addWidget(row)
+
+        if sys.platform != "win32":
+            layout.addSpacing(8)
+            note = QLabel(
+                "Linux setup: Discord must expose its IPC socket at "
+                "$XDG_RUNTIME_DIR/discord-ipc-0.\n"
+                "Flatpak/Goofcord users: run once in a terminal —\n"
+                "  ln -sf $XDG_RUNTIME_DIR/.flatpak/<app-id>/xdg-run/discord-ipc-0 "
+                "$XDG_RUNTIME_DIR/discord-ipc-0\n"
+                "Replace <app-id> with com.discordapp.Discord or "
+                "io.github.milkshiift.GoofCord as appropriate.\n"
+                "For Goofcord, also enable arRPC in its settings."
+            )
+            note.setObjectName("section-label")
+            note.setWordWrap(True)
+            layout.addWidget(note)
+
+    def _on_discord_toggled(self, state: int) -> None:
+        enabled = bool(state)
+        config = load_config()
+        config["discord_presence_enabled"] = enabled
+        save_config(config)
+        from core.discord_presence import clear_presence
+        if not enabled:
+            clear_presence()
 
     def _add_group(self, layout: QVBoxLayout, text: str) -> None:
         label = QLabel(text)

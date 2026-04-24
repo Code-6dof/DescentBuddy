@@ -88,73 +88,9 @@ class _DiscordPresence:
             return False
 
     def update(self, game_name: str, start_timestamp: float) -> None:
-        if not self._connected:
-            self._try_connect()
-        if not self._connected:
+        from core.app_config import load_config
+        if not load_config().get("discord_presence_enabled", True):
             return
-        try:
-            self._rpc.update(
-                details=game_name,
-                state="In game",
-                start=int(start_timestamp),
-                large_image="descentbuddy",
-                large_text="DescentBuddy",
-            )
-        except Exception:
-            self._connected = False
-            self._rpc = None
-
-    def clear(self) -> None:
-        if not self._connected or self._rpc is None:
-            return
-        try:
-            self._rpc.clear()
-            self._rpc.close()
-        except Exception:
-            pass
-        self._rpc = None
-        self._connected = False
-
-
-_instance = _DiscordPresence()
-
-
-def update_presence(game_name: str, start_timestamp: float) -> None:
-    """Set Rich Presence to show the given game as actively running."""
-    _instance.update(game_name, start_timestamp)
-
-
-def clear_presence() -> None:
-    """Remove Rich Presence (call when the game process stops)."""
-    _instance.clear()
-
-
-try:
-    from pypresence import Presence
-    _pypresence_available = True
-except ImportError:
-    _pypresence_available = False
-
-
-class _DiscordPresence:
-    def __init__(self) -> None:
-        self._rpc = None
-        self._connected = False
-
-    def _try_connect(self) -> bool:
-        if not _pypresence_available or not DISCORD_APP_ID:
-            return False
-        try:
-            self._rpc = Presence(DISCORD_APP_ID)
-            self._rpc.connect()
-            self._connected = True
-            return True
-        except Exception:
-            self._rpc = None
-            self._connected = False
-            return False
-
-    def update(self, game_name: str, start_timestamp: float) -> None:
         if not self._connected:
             self._try_connect()
         if not self._connected:
