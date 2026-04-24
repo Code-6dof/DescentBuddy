@@ -33,4 +33,4 @@
 
 ---
 
-And the best part is... this is 100% legal to use! This program is designed to be lightweight, and as efficient as possible.
+And the best part is... this is 100% RDL legal to use! This program is designed to be lightweight, and as efficient as possible.
