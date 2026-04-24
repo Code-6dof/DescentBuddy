@@ -333,6 +333,15 @@ class _GameCard(QWidget):
     def has_exe(self) -> bool:
         return self._exe_configured
 
+    def flush_session(self) -> None:
+        """Save any accumulated session time immediately (e.g. on app quit)."""
+        if self._session_start > 0:
+            elapsed = int(time.monotonic() - self._session_start)
+            self._session_start = 0.0
+            self._session_timer.stop()
+            if elapsed > 0:
+                add_seconds(self._game.value, elapsed)
+
     def set_selected(self, active: bool) -> None:
         self._select_btn.setChecked(active)
         self._select_btn.setText("Selected" if active else "Select")
@@ -417,7 +426,8 @@ class _GameCard(QWidget):
         if self._session_start > 0:
             elapsed = int(time.monotonic() - self._session_start)
             total = get_total_seconds(self._game.value) + elapsed
-            self._playtime_label.setText(f"Play time: {format_playtime(total)}  (session: {format_playtime(elapsed)})")
+            session_str = f"{elapsed // 60}:{elapsed % 60:02d}"
+            self._playtime_label.setText(f"Play time: {format_playtime(total)}  (session: {session_str})")
 
     def _playtime_text(self) -> str:
         total = get_total_seconds(self._game.value)
@@ -493,6 +503,11 @@ class LaunchPanel(QWidget):
     def _on_card_selected(self, game_value: str) -> None:
         self._d1_card.set_selected(game_value == Game.D1.value)
         self._d2_card.set_selected(game_value == Game.D2.value)
+
+    def save_active_sessions(self) -> None:
+        """Flush any in-progress session time to config (called on app quit)."""
+        self._d1_card.flush_session()
+        self._d2_card.flush_session()
 
     def emit_current_game(self) -> None:
         """Re-emit game state for whichever games have executables configured."""

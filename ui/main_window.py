@@ -98,6 +98,7 @@ class MainWindow(QMainWindow):
         app = QApplication.instance()
         assert app is not None
         app.aboutToQuit.connect(community_panel.go_offline)
+        app.aboutToQuit.connect(launch_panel.save_active_sessions)
 
         body.addWidget(self._stack, stretch=1)
 
