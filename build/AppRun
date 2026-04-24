@@ -1,0 +1,4 @@
+#!/bin/bash
+# AppRun — entry point for the DescentBuddy AppImage
+APPDIR="$(dirname "$(readlink -f "$0")")"
+exec "$APPDIR/usr/bin/descentbuddy" "$@"

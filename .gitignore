@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+dist/
+build/descentbuddy/
+build/appimagetool-x86_64.AppImage
+DescentBuddy.AppDir/
+DescentBuddy-x86_64.AppImage
+DescentBuddy-Windows.zip
+*.zip
+.vscode/
+dxma-files.zip
+dxma_missions_complete_with_direct_links.csv

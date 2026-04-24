@@ -1,0 +1,85 @@
+name: Build
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pyinstaller PyQt6 PyQt6-WebEngine requests
+
+      - name: Build
+        run: python -m PyInstaller descentbuddy_windows.spec --noconfirm --clean
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DescentBuddy-Windows
+          path: dist/DescentBuddy/
+          retention-days: 30
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libfuse2 libglib2.0-0 libgl1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pyinstaller PyQt6 PyQt6-WebEngine requests
+
+      - name: Generate icon
+        run: python3 build/generate_icon.py
+
+      - name: Build with PyInstaller
+        run: python -m PyInstaller descentbuddy.spec --noconfirm --clean
+
+      - name: Download appimagetool
+        run: |
+          curl -L -o appimagetool.AppImage \
+            https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool.AppImage
+
+      - name: Assemble AppDir
+        run: |
+          mkdir -p DescentBuddy.AppDir/usr/bin
+          mkdir -p DescentBuddy.AppDir/usr/share/applications
+          mkdir -p DescentBuddy.AppDir/usr/share/icons/hicolor/256x256/apps
+          cp -r dist/descentbuddy/. DescentBuddy.AppDir/usr/bin/
+          cp build/descentbuddy.desktop DescentBuddy.AppDir/descentbuddy.desktop
+          cp build/descentbuddy.desktop DescentBuddy.AppDir/usr/share/applications/descentbuddy.desktop
+          cp build/descentbuddy.png DescentBuddy.AppDir/descentbuddy.png
+          cp build/descentbuddy.png DescentBuddy.AppDir/usr/share/icons/hicolor/256x256/apps/descentbuddy.png
+          cp build/AppRun DescentBuddy.AppDir/AppRun
+          chmod +x DescentBuddy.AppDir/AppRun
+
+      - name: Build AppImage
+        run: |
+          ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool.AppImage \
+            DescentBuddy.AppDir DescentBuddy-x86_64.AppImage
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DescentBuddy-Linux
+          path: DescentBuddy-x86_64.AppImage
+          retention-days: 30

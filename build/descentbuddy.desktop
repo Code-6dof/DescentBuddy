@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=DescentBuddy
+Exec=descentbuddy
+Icon=descentbuddy
+Type=Application
+Categories=Game;
+Comment=DXX-Redux Companion Launcher for Descent 1
+Terminal=false
