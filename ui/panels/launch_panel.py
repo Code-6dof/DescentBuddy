@@ -511,10 +511,6 @@ class LaunchPanel(QWidget):
 
     def emit_current_game(self) -> None:
         """Re-emit game state for whichever games have executables configured."""
-        for card in (self._d1_card, self._d2_card):
-            if card.has_exe():
-                self.game_changed.emit(card._game.value)
-        # Select the preferred game first, falling back to whichever is configured
         preferred = load_config().get("default_game", "d1")
         ordered = (
             (self._d1_card, self._d2_card)
@@ -524,4 +520,5 @@ class LaunchPanel(QWidget):
         for card in ordered:
             if card.has_exe():
                 self._on_card_selected(card._game.value)
+                self.game_changed.emit(card._game.value)
                 break
