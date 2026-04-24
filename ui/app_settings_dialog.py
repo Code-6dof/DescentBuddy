@@ -277,11 +277,12 @@ class AppSettingsDialog(QDialog):
         sound_row.addWidget(QLabel("Notification sound"))
         sound_row.addSpacing(16)
         self._sound_combo = QComboBox()
-        from core.sound_player import list_sounds
-        for stem, label in list_sounds():
+        from core.sound_player import default_sound, list_sounds
+        sounds = list_sounds()
+        for stem, label in sounds:
             self._sound_combo.addItem(label, stem)
-        current_sound = load_config().get("notification_sound", "none")
-        stems = [s for s, _ in list_sounds()]
+        stems = [s for s, _ in sounds]
+        current_sound = load_config().get("notification_sound") or default_sound()
         if current_sound in stems:
             self._sound_combo.setCurrentIndex(stems.index(current_sound))
         self._sound_combo.setFixedWidth(180)

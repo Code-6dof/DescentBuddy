@@ -8,7 +8,11 @@ import sys
 from pathlib import Path
 
 from PyQt6.QtCore import QUrl
-from PyQt6.QtMultimedia import QAudioOutput, QMediaPlayer
+try:
+    from PyQt6.QtMultimedia import QAudioOutput, QMediaPlayer
+    _MULTIMEDIA_AVAILABLE = True
+except ImportError:
+    _MULTIMEDIA_AVAILABLE = False
 
 _LABEL_MAP = {
     "dragon-studio-chime-notification-444815": "Chime",
@@ -46,9 +50,20 @@ def list_sounds() -> list[tuple[str, str]]:
     return result
 
 
+def default_sound() -> str:
+    """Return the stem of the first available sound, or 'none' if there are none."""
+    sounds = list_sounds()
+    for stem, _ in sounds:
+        if stem != "none":
+            return stem
+    return "none"
+
+
 def play_notification_sound(stem: str) -> None:
     """Play the sound file identified by stem. No-op for 'none' or missing files."""
     global _player, _audio_output
+    if not _MULTIMEDIA_AVAILABLE:
+        return
     if not stem or stem == "none":
         return
     path = sounds_dir() / f"{stem}.mp3"

@@ -251,8 +251,12 @@ class NotificationInbox(QWidget):
         unread = sum(1 for n in notifications if not n.get("read"))
         if unread > self._prev_unread_count:
             from core.app_config import load_config
-            from core.sound_player import play_notification_sound
-            play_notification_sound(load_config().get("notification_sound", "none"))
+            from core.sound_player import default_sound, play_notification_sound
+            config = load_config()
+            stem = config.get("notification_sound")
+            if not stem:
+                stem = default_sound()
+            play_notification_sound(stem)
         self._prev_unread_count = unread
         self._update_button()
 
