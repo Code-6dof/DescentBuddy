@@ -83,7 +83,9 @@ class _GameCard(QWidget):
         self._icon_provider = QFileIconProvider()
         self._settings_dialog: SettingsDialog | None = None
         self._version_threads: list[QThread] = []
+        self._detected_version: str = ""
         self._session_start: float = 0.0
+        self._session_start_epoch: float = 0.0
         self._session_timer = QTimer(self)
         self._session_timer.setInterval(1000)
         self._session_timer.timeout.connect(self._tick_session)
@@ -268,6 +270,7 @@ class _GameCard(QWidget):
         self._enable_icon_click()
         thread = _VersionThread(path, self)
         thread.result.connect(lambda v: self._version_label.setText(f"Version: {v}"))
+        thread.result.connect(self._on_version_detected)
         thread.finished.connect(lambda: self._prune_version_thread(thread))
         self._version_threads.append(thread)
         thread.start()
@@ -277,8 +280,19 @@ class _GameCard(QWidget):
         if thread in self._version_threads:
             self._version_threads.remove(thread)
 
+    def _on_version_detected(self, version: str) -> None:
+        self._detected_version = version
+        if self._launcher.is_running():
+            update_presence(
+                self._game.value,
+                display_name(self._game),
+                version,
+                self._session_start_epoch,
+            )
+
     def _enter_empty_state(self) -> None:
         self._exe_configured = False
+        self._detected_version = ""
         self._filename_label.setText("No executable selected")
         self._version_label.setVisible(False)
         self._size_label.setVisible(False)
@@ -389,13 +403,14 @@ class _GameCard(QWidget):
             self._set_status("error", f"Error: {exc}")
             return
         self._session_start = time.monotonic()
+        self._session_start_epoch = time.time()
         self._session_timer.start()
         self._action_btn.setText("STOP")
         self._action_btn.setEnabled(True)
         self._select_btn.setEnabled(False)
         self._set_status("running", "Running")
         self._poll_timer.start()
-        update_presence(display_name(self._game), time.time())
+        update_presence(self._game.value, display_name(self._game), self._detected_version, self._session_start_epoch)
         QTimer.singleShot(800, self._check_launch_survived)
 
     def _check_launch_survived(self) -> None:
@@ -415,6 +430,7 @@ class _GameCard(QWidget):
         if self._session_start > 0:
             elapsed = int(time.monotonic() - self._session_start)
             self._session_start = 0.0
+            self._session_start_epoch = 0.0
             self._session_timer.stop()
             add_seconds(self._game.value, elapsed)
             self._playtime_label.setText(self._playtime_text())

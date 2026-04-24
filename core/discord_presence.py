@@ -87,7 +87,7 @@ class _DiscordPresence:
             self._connected = False
             return False
 
-    def update(self, game_name: str, start_timestamp: float) -> None:
+    def update(self, game_key: str, game_name: str, version: str, start_timestamp: float) -> None:
         from core.app_config import load_config
         if not load_config().get("discord_presence_enabled", True):
             return
@@ -95,13 +95,16 @@ class _DiscordPresence:
             self._try_connect()
         if not self._connected:
             return
+        state = version if version else "DXX-Redux"
         try:
             self._rpc.update(
                 details=game_name,
-                state="In game",
+                state=state,
                 start=int(start_timestamp),
-                large_image="descentbuddy",
-                large_text="DescentBuddy",
+                large_image=game_key,
+                large_text=game_name,
+                small_image="descentbuddy",
+                small_text="Launched via DescentBuddy",
             )
         except Exception:
             self._connected = False
@@ -122,9 +125,13 @@ class _DiscordPresence:
 _instance = _DiscordPresence()
 
 
-def update_presence(game_name: str, start_timestamp: float) -> None:
-    """Set Rich Presence to show the given game as actively running."""
-    _instance.update(game_name, start_timestamp)
+def update_presence(game_key: str, game_name: str, version: str, start_timestamp: float) -> None:
+    """Set Rich Presence to show the given game as actively running.
+
+    game_key should match a Discord art asset key (e.g. 'd1' or 'd2').
+    version is shown as the status line; pass an empty string if unknown.
+    """
+    _instance.update(game_key, game_name, version, start_timestamp)
 
 
 def clear_presence() -> None:
