@@ -1,8 +1,11 @@
 """Community panel — see who is online and manage your presence."""
 
+import sys
+
 from PyQt6.QtCore import Qt, QRect, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPixmap
 from PyQt6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QFrame,
     QHBoxLayout,
@@ -366,12 +369,70 @@ class CommunityPanel(QWidget):
         self._bottom_status.setObjectName("section-label")
         layout.addWidget(self._bottom_status)
 
+        layout.addSpacing(20)
+
+        discord_divider = QFrame()
+        discord_divider.setFrameShape(QFrame.Shape.HLine)
+        layout.addWidget(discord_divider)
+
+        layout.addSpacing(14)
+
+        discord_heading = QLabel("DISCORD")
+        discord_heading.setObjectName("section-label")
+        layout.addWidget(discord_heading)
+
+        layout.addSpacing(8)
+
+        discord_row = QHBoxLayout()
+        discord_row.setSpacing(8)
+
+        discord_label = QLabel("Show Rich Presence while playing")
+        discord_label.setToolTip(
+            "When enabled, your Discord status will show which game you are playing\n"
+            "while a game is running through DescentBuddy."
+        )
+        discord_row.addWidget(discord_label, 1)
+
+        self._discord_checkbox = QCheckBox()
+        self._discord_checkbox.setChecked(
+            load_config().get("discord_presence_enabled", True)
+        )
+        self._discord_checkbox.stateChanged.connect(self._on_discord_toggled)
+        discord_row.addWidget(self._discord_checkbox)
+
+        layout.addLayout(discord_row)
+
+        if sys.platform != "win32":
+            layout.addSpacing(8)
+            note = QLabel(
+                "Linux setup: Discord must expose its IPC socket at "
+                "$XDG_RUNTIME_DIR/discord-ipc-0.\n"
+                "Flatpak/Goofcord users: run once in a terminal --\n"
+                "  ln -sf $XDG_RUNTIME_DIR/.flatpak/<app-id>/xdg-run/discord-ipc-0 "
+                "$XDG_RUNTIME_DIR/discord-ipc-0\n"
+                "Replace <app-id> with com.discordapp.Discord or "
+                "io.github.milkshiift.GoofCord as appropriate.\n"
+                "For Goofcord, also enable arRPC in its settings."
+            )
+            note.setObjectName("section-label")
+            note.setWordWrap(True)
+            layout.addWidget(note)
+
         layout.addStretch()
         return page
 
     # ------------------------------------------------------------------
     # Session management
     # ------------------------------------------------------------------
+
+    def _on_discord_toggled(self, state: int) -> None:
+        enabled = bool(state)
+        config = load_config()
+        config["discord_presence_enabled"] = enabled
+        save_config(config)
+        if not enabled:
+            from core.discord_presence import clear_presence
+            clear_presence()
 
     def _try_restore_session(self) -> None:
         session = load_session()

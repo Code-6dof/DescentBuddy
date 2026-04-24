@@ -50,11 +50,7 @@ class GameLauncher:
     def stop(self) -> None:
         """Terminate the game process if it is running."""
         if self._process and self._process.poll() is None:
-            self._process.terminate()
-            try:
-                self._process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                self._process.kill()
+            self._process.kill()
         self._process = None
 
     def is_running(self) -> bool:
