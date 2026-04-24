@@ -5,9 +5,20 @@ The config file is created on first save; missing keys return their defaults.
 """
 
 import json
+import os
+import sys
 from pathlib import Path
 
-_CONFIG_FILE = Path.home() / ".config" / "descentbuddy" / "config.json"
+
+def _config_dir() -> Path:
+    if sys.platform == "win32":
+        base = Path(os.environ.get("APPDATA", Path.home()))
+    else:
+        base = Path.home() / ".config"
+    return base / "descentbuddy"
+
+
+_CONFIG_FILE = _config_dir() / "config.json"
 
 
 def load_config() -> dict:

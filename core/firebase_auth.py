@@ -1,6 +1,8 @@
 """Firebase authentication — rdladder accounts for identity, descent-buddy for presence token."""
 
 import json
+import os
+import sys
 from pathlib import Path
 
 import requests
@@ -8,7 +10,16 @@ import requests
 _RDLADDER_KEY = "REDACTED_RDLADDER_KEY"
 _DESCENT_BUDDY_KEY = "REDACTED_DESCENT_BUDDY_KEY"
 
-_SESSION_PATH = Path.home() / ".config" / "descentbuddy" / "session.json"
+
+def _config_dir() -> Path:
+    if sys.platform == "win32":
+        base = Path(os.environ.get("APPDATA", Path.home()))
+    else:
+        base = Path.home() / ".config"
+    return base / "descentbuddy"
+
+
+_SESSION_PATH = _config_dir() / "session.json"
 
 _SIGN_IN_URL = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
 _ANON_SIGN_UP_URL = "https://identitytoolkit.googleapis.com/v1/accounts:signUp"

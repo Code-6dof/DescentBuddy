@@ -1,5 +1,7 @@
 """RDL panel — embedded browser locked to rdl.descentnexus.com with persistent session."""
 
+import os
+import sys
 from pathlib import Path
 
 from PyQt6.QtCore import QUrl, Qt
@@ -9,7 +11,17 @@ from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidg
 
 _RDL_BASE = "https://rdl.descentnexus.com"
 _ALLOWED_HOST = "rdl.descentnexus.com"
-_PROFILE_DIR = Path.home() / ".config" / "descentbuddy" / "rdl_profile"
+
+
+def _profile_dir() -> Path:
+    if sys.platform == "win32":
+        base = Path(os.environ.get("APPDATA", Path.home()))
+    else:
+        base = Path.home() / ".config"
+    return base / "descentbuddy" / "rdl_profile"
+
+
+_PROFILE_DIR = _profile_dir()
 
 
 class _RdlPage(QWebEnginePage):
