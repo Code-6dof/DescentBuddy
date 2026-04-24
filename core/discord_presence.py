@@ -96,14 +96,14 @@ class _DiscordPresence:
             self._try_connect()
         if not self._connected:
             return
-        state = version if version else "DXX-Redux"
+        state = f"DXX-Redux {version}" if version else "DXX-Redux"
         try:
             self._rpc.update(
                 details=game_name,
                 state=state,
                 start=int(start_timestamp),
                 large_image="descentbuddy",
-                large_text="DescentBuddy",
+                large_text="Launched with Descent Buddy",
                 small_image=game_key,
                 small_text=game_name,
             )
