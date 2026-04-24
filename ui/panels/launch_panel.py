@@ -224,7 +224,7 @@ class _GameCard(QWidget):
         if p.suffix.lower() == ".appimage":
             icon_bytes = None
             with tempfile.TemporaryDirectory() as tmpdir:
-                icon_path = extract_appimage_icon(path, tmpdir)
+                icon_path = extract_appimage_icon(path, tmpdir  )
                 if icon_path:
                     try:
                         icon_bytes = Path(icon_path).read_bytes()
