@@ -214,12 +214,12 @@ THEMES: dict[str, dict[str, str]] = {
 }
 
 THEME_LABELS: dict[str, str] = {
-    "descent":    "Descent",
+    "descent":    "Original",
     "light":      "Light",
     "mocha":      "Mocha",
-    "nightflight": "Nightflight",
-    "reactor":    "Reactor Core",
-    "void":       "Void",
+    "nightflight": "Midnight",
+    "reactor":    "Dark Green",
+    "void":       "Dark Purple",
 }
 
 _active_theme: str = "descent"
