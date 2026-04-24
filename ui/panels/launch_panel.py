@@ -3,6 +3,7 @@
 import os
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 from PyQt6.QtCore import QByteArray, QFileInfo, Qt, QThread, QTimer, pyqtSignal
@@ -24,6 +25,7 @@ from core.app_config import load_config, save_config
 from core.appimage_icon import extract_appimage_icon
 from core.game_detector import Game, detect_game, display_name
 from core.game_launcher import GameLauncher
+from core.playtime import add_seconds, format_playtime, get_total_seconds
 from core.version_detector import detect_version
 from ui.panels.settings_panel import SettingsDialog
 
@@ -80,6 +82,10 @@ class _GameCard(QWidget):
         self._icon_provider = QFileIconProvider()
         self._settings_dialog: SettingsDialog | None = None
         self._version_threads: list[QThread] = []
+        self._session_start: float = 0.0
+        self._session_timer = QTimer(self)
+        self._session_timer.setInterval(1000)
+        self._session_timer.timeout.connect(self._tick_session)
 
         self._build_ui()
         self._restore_saved_path()
@@ -149,6 +155,11 @@ class _GameCard(QWidget):
         self._size_label.setObjectName("version-label")
         self._size_label.setVisible(False)
         meta_col.addWidget(self._size_label)
+
+        self._playtime_label = QLabel("")
+        self._playtime_label.setObjectName("version-label")
+        self._playtime_label.setVisible(False)
+        meta_col.addWidget(self._playtime_label)
 
         meta_col.addStretch()
         card_row.addLayout(meta_col, 1)
@@ -251,6 +262,8 @@ class _GameCard(QWidget):
         self._version_label.setVisible(True)
         self._size_label.setText(f"Size: {_format_size(os.path.getsize(path))}")
         self._size_label.setVisible(True)
+        self._playtime_label.setText(self._playtime_text())
+        self._playtime_label.setVisible(True)
         self._action_btn.setEnabled(True)
         self._set_status("idle", "Ready")
         self._enable_icon_click()
@@ -270,6 +283,7 @@ class _GameCard(QWidget):
         self._filename_label.setText("No executable selected")
         self._version_label.setVisible(False)
         self._size_label.setVisible(False)
+        self._playtime_label.setVisible(False)
         self._action_btn.setEnabled(False)
         self._set_status("idle", "")
         self._render_blank_icon()
@@ -366,6 +380,8 @@ class _GameCard(QWidget):
         except (FileNotFoundError, RuntimeError, OSError) as exc:
             self._set_status("error", f"Error: {exc}")
             return
+        self._session_start = time.monotonic()
+        self._session_timer.start()
         self._action_btn.setText("STOP")
         self._action_btn.setEnabled(True)
         self._select_btn.setEnabled(False)
@@ -386,10 +402,28 @@ class _GameCard(QWidget):
 
     def _set_status_idle(self) -> None:
         self._poll_timer.stop()
+        if self._session_start > 0:
+            elapsed = int(time.monotonic() - self._session_start)
+            self._session_start = 0.0
+            self._session_timer.stop()
+            add_seconds(self._game.value, elapsed)
+            self._playtime_label.setText(self._playtime_text())
         self._action_btn.setText("LAUNCH")
         self._action_btn.setEnabled(True)
         self._select_btn.setEnabled(True)
         self._set_status("idle", "Ready")
+
+    def _tick_session(self) -> None:
+        if self._session_start > 0:
+            elapsed = int(time.monotonic() - self._session_start)
+            total = get_total_seconds(self._game.value) + elapsed
+            self._playtime_label.setText(f"Play time: {format_playtime(total)}  (session: {format_playtime(elapsed)})")
+
+    def _playtime_text(self) -> str:
+        total = get_total_seconds(self._game.value)
+        if total == 0:
+            return "Play time: 0 min"
+        return f"Play time: {format_playtime(total)}"
 
     def _set_status(self, state: str, text: str) -> None:
         mapping = {
