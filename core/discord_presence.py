@@ -82,7 +82,8 @@ class _DiscordPresence:
             self._rpc.connect()
             self._connected = True
             return True
-        except Exception:
+        except Exception as exc:
+            print(f"[discord] connect failed: {exc!r}")
             self._rpc = None
             self._connected = False
             return False
@@ -103,10 +104,9 @@ class _DiscordPresence:
                 start=int(start_timestamp),
                 large_image=game_key,
                 large_text=game_name,
-                small_image="descentbuddy",
-                small_text="Launched via DescentBuddy",
             )
-        except Exception:
+        except Exception as exc:
+            print(f"[discord] update failed: {exc!r}")
             self._connected = False
             self._rpc = None
 
