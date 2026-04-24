@@ -24,6 +24,7 @@ a = Analysis(
         ('build/descentbuddy.png', '.'),
     ],
     hiddenimports=[
+        'core.api_keys',
         'PyQt6',
         'PyQt6.sip',
         'PyQt6.QtCore',

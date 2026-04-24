@@ -1,0 +1,2 @@
+RDLADDER_KEY = "AIzaSyDMF-bq4tpLoZvUYep_G-igmHbK2h-e-Zs"
+DESCENT_BUDDY_KEY = "AIzaSyAlHeHycVzNq2uLxiZ4-VK-PzhnBkM6X8E"

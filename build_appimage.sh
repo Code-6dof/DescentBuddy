@@ -64,13 +64,25 @@ if [ ! -f "$APPIMAGETOOL" ]; then
     chmod +x "$APPIMAGETOOL"
 fi
 
-# Run appimagetool (APPIMAGE_EXTRACT_AND_RUN avoids requiring FUSE on the build host)
+# APPIMAGE_EXTRACT_AND_RUN=1 lets appimagetool run on the build host without FUSE.
+# The resulting AppImage uses the standard runtime; end-users on FUSE3-only systems
+# (Ubuntu 22.04+) launch it via launch.sh or install.sh, both of which set
+# APPIMAGE_EXTRACT_AND_RUN=1 automatically.
 ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGETOOL" "$APPDIR" "$OUTPUT"
 chmod +x "$OUTPUT"
+
+# Ensure launch.sh is executable so users can run it straight after download
+chmod +x "$SCRIPT_DIR/launch.sh"
 
 echo ""
 echo "Done: $OUTPUT"
 echo ""
-echo "NOTE: Requires libfuse2 to run by double-click on Ubuntu/Debian."
-echo "      Install with: sudo apt install libfuse2"
-echo "      Or run without FUSE:  APPIMAGE_EXTRACT_AND_RUN=1 ./$OUTPUT"
+echo "Release files to upload to GitHub:"
+echo "  $OUTPUT"
+echo "  $SCRIPT_DIR/install.sh"
+echo "  $SCRIPT_DIR/launch.sh"
+echo ""
+echo "Linux end-user experience:"
+echo "  • Double-click the AppImage — works on FUSE2 and FUSE3 systems (Ubuntu 20.04+)"
+echo "  • Or run directly:        ./launch.sh"
+echo "  • Or add to app menu:     chmod +x install.sh && ./install.sh"

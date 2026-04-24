@@ -2,6 +2,7 @@
 # install.sh — Install DescentBuddy so it appears in your app launcher
 # and can be double-clicked like any other application.
 #
+# Works with just the AppImage — no build/ directory required.
 # Run from the folder containing DescentBuddy-x86_64.AppImage:
 #   chmod +x install.sh && ./install.sh
 
@@ -28,8 +29,18 @@ mkdir -p "$INSTALL_DIR" "$ICON_DIR" "$DESKTOP_DIR"
 chmod +x "$APPIMAGE"
 cp "$APPIMAGE" "$INSTALL_DIR/DescentBuddy-x86_64.AppImage"
 
+# Try to get the icon: prefer pre-built file, fall back to extracting from the AppImage
 if [ -f "$ICON_SRC" ]; then
     cp "$ICON_SRC" "$ICON_DIR/descentbuddy.png"
+else
+    echo "  Extracting icon from AppImage..."
+    _TMP="$(mktemp -d)"
+    # AppImage supports --appimage-extract; APPIMAGE_EXTRACT_AND_RUN skips FUSE
+    (cd "$_TMP" && APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGE" --appimage-extract descentbuddy.png 2>/dev/null || true)
+    if [ -f "$_TMP/squashfs-root/descentbuddy.png" ]; then
+        cp "$_TMP/squashfs-root/descentbuddy.png" "$ICON_DIR/descentbuddy.png"
+    fi
+    rm -rf "$_TMP"
 fi
 
 cat > "$DESKTOP_DIR/descentbuddy.desktop" << EOF
@@ -54,5 +65,8 @@ fi
 
 echo ""
 echo "Done. Descent Buddy is installed."
-echo "You can now launch it from your app menu, or run:"
-echo "  $INSTALL_DIR/DescentBuddy-x86_64.AppImage"
+echo "Launch it from your app menu, or run:"
+echo "  APPIMAGE_EXTRACT_AND_RUN=1 $INSTALL_DIR/DescentBuddy-x86_64.AppImage"
+echo ""
+echo "NOTE: If double-clicking the AppImage directly (without this installer)"
+echo "      does nothing, install FUSE2:  sudo apt install libfuse2"

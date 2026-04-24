@@ -26,6 +26,30 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM Ensure api_keys.py exists (it is gitignored; copy template if absent)
+if not exist "core\api_keys.py" (
+    echo [!] core\api_keys.py not found. Copying template...
+    copy "core\api_keys.py.template" "core\api_keys.py" >nul
+    if errorlevel 1 (
+        echo ERROR: Could not copy api_keys.py.template to api_keys.py.
+        pause
+        exit /b 1
+    )
+    echo     core\api_keys.py created from template. Fill in real keys for production builds.
+)
+
+REM Fail fast if keys are still blank (template was not filled in)
+findstr /C:"RDLADDER_KEY = \"\"" "core\api_keys.py" >nul 2>&1
+if not errorlevel 1 (
+    echo.
+    echo ERROR: core\api_keys.py still contains empty Firebase keys.
+    echo        Open core\api_keys.py and fill in RDLADDER_KEY and DESCENT_BUDDY_KEY
+    echo        before building. These values come from your Firebase console.
+    echo.
+    pause
+    exit /b 1
+)
+
 REM Run PyInstaller
 echo [2/3] Running PyInstaller...
 python -m PyInstaller descentbuddy_windows.spec --noconfirm --clean
