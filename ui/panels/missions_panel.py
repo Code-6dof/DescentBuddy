@@ -1,10 +1,11 @@
 """Missions panel — browse, filter, and install community missions from DXMA."""
 
 import sys
+import urllib.request
 from pathlib import Path
 
-from PyQt6.QtCore import QUrl, Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QColor, QDesktopServices, QPixmap
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QColor, QPixmap
 from PyQt6.QtWidgets import (
     QAbstractItemView,
     QDialog,
@@ -13,6 +14,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMessageBox,
+    QProgressBar,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -20,7 +22,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from core.app_config import load_config
+from core.app_config import load_config, save_config
 from core.mission_catalog import (
     add_entries,
     fetch_new_d1_missions,
@@ -97,6 +99,128 @@ class _ImageLoadThread(QThread):
         data = fetch_mission_image_from_web(self._mission_id, self._image_url)
         if data:
             self.image_ready.emit(data)
+
+
+_MIRROR_URL = "https://2ar.nl/dl/dxma-files.zip"
+_MIRROR_FILENAME = "dxma-files.zip"
+
+
+class _BulkDownloadThread(QThread):
+    progress = pyqtSignal(int, int)   # bytes_downloaded, total_bytes
+    finished_ok = pyqtSignal(str)     # path to saved file
+    failed = pyqtSignal(str)          # error message
+
+    def __init__(self, dest_path: Path) -> None:
+        super().__init__()
+        self._dest_path = dest_path
+        self._cancelled = False
+
+    def cancel(self) -> None:
+        self._cancelled = True
+
+    def run(self) -> None:
+        dest = self._dest_path
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with urllib.request.urlopen(_MIRROR_URL, timeout=30) as response:
+                total = int(response.headers.get("Content-Length", 0))
+                downloaded = 0
+                chunk = 65536
+                with dest.open("wb") as f:
+                    while True:
+                        if self._cancelled:
+                            dest.unlink(missing_ok=True)
+                            return
+                        data = response.read(chunk)
+                        if not data:
+                            break
+                        f.write(data)
+                        downloaded += len(data)
+                        self.progress.emit(downloaded, total)
+        except Exception as exc:
+            dest.unlink(missing_ok=True)
+            self.failed.emit(str(exc))
+            return
+        self.finished_ok.emit(str(dest))
+
+
+class _BulkDownloadDialog(QDialog):
+    download_complete = pyqtSignal(str)   # path to the saved zip
+
+    def __init__(self, dest_path: Path, parent=None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Downloading DXMA Mirror Archive")
+        self.setMinimumWidth(480)
+        self.setModal(True)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 16)
+        layout.setSpacing(12)
+
+        info = QLabel(
+            f"Downloading the DXMA bulk archive (~1 GB).\n"
+            f"This is a one-time download. Saving to:\n{dest_path}"
+        )
+        info.setWordWrap(True)
+        layout.addWidget(info)
+
+        self._bar = QProgressBar()
+        self._bar.setRange(0, 100)
+        self._bar.setValue(0)
+        self._bar.setTextVisible(True)
+        layout.addWidget(self._bar)
+
+        self._status = QLabel("Connecting...")
+        self._status.setObjectName("section-label")
+        layout.addWidget(self._status)
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        self._cancel_btn = QPushButton("Cancel")
+        self._cancel_btn.setFixedWidth(80)
+        self._cancel_btn.clicked.connect(self._on_cancel)
+        btn_row.addWidget(self._cancel_btn)
+        layout.addLayout(btn_row)
+
+        self._thread = _BulkDownloadThread(dest_path)
+        self._thread.progress.connect(self._on_progress)
+        self._thread.finished_ok.connect(self._on_finished_ok)
+        self._thread.failed.connect(self._on_failed)
+        self._thread.start()
+
+    def _on_progress(self, downloaded: int, total: int) -> None:
+        mb_down = downloaded / 1_048_576
+        if total > 0:
+            pct = int(downloaded * 100 / total)
+            mb_total = total / 1_048_576
+            self._bar.setValue(pct)
+            self._status.setText(f"{mb_down:.1f} / {mb_total:.1f} MB  ({pct}%)")
+        else:
+            self._status.setText(f"{mb_down:.1f} MB downloaded")
+
+    def _on_finished_ok(self, path: str) -> None:
+        self._cancel_btn.setText("Close")
+        self._cancel_btn.clicked.disconnect()
+        self._cancel_btn.clicked.connect(self.accept)
+        self._bar.setValue(100)
+        self._status.setText("Download complete.")
+        self.download_complete.emit(path)
+
+    def _on_failed(self, msg: str) -> None:
+        self._status.setText(f"Failed: {msg}")
+        self._cancel_btn.setText("Close")
+        self._cancel_btn.clicked.disconnect()
+        self._cancel_btn.clicked.connect(self.reject)
+
+    def _on_cancel(self) -> None:
+        self._thread.cancel()
+        self._thread.wait(3000)
+        self.reject()
+
+    def closeEvent(self, event) -> None:
+        self._thread.cancel()
+        self._thread.wait(3000)
+        super().closeEvent(event)
 
 
 class _MissionDetailDialog(QDialog):
@@ -377,7 +501,36 @@ class MissionsPanel(QWidget):
         self._load_catalog()
 
     def _open_mirror_download(self) -> None:
-        QDesktopServices.openUrl(QUrl("https://2ar.nl/dl/dxma-files.zip"))
+        config = load_config()
+        archive_key = f"local_archive_path_{self._game}"
+        existing = config.get(archive_key, "").strip()
+
+        if existing and Path(existing).exists():
+            reply = QMessageBox.question(
+                self,
+                "Archive Already Exists",
+                f"A local archive is already configured at:\n{existing}\n\nDownload again and overwrite?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+            dest = Path(existing)
+        else:
+            default_dir = Path.home() / "Documents" / "DescentBuddy"
+            dest = Path(existing) if existing else default_dir / _MIRROR_FILENAME
+
+        dialog = _BulkDownloadDialog(dest, self)
+        dialog.download_complete.connect(self._on_mirror_downloaded)
+        dialog.exec()
+
+    def _on_mirror_downloaded(self, path: str) -> None:
+        config = load_config()
+        config["local_archive_path_d1"] = path
+        config["local_archive_path_d2"] = path
+        save_config(config)
+        self._bottom_status.setText(
+            "Mirror archive saved. Mission installs will now read from the local archive."
+        )
 
     def _load_catalog(self) -> None:
         self._catalog = load_catalog()
