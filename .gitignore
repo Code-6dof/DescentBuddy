@@ -1,6 +1,10 @@
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
 dist/
 build/descentbuddy/
 build/appimagetool-x86_64.AppImage
@@ -13,3 +17,6 @@ dxma-files.zip
 dxma_missions_complete_with_direct_links.csv
 core/api_keys.py
 build/537277598-1cbd4db9-2ad9-4063-b5c1-c6618bc09c1b.webp
+data/missions_cache.json
+*.log
+*.tmp

@@ -35,8 +35,7 @@ class AboutPanel(QWidget):
 
         desc = QLabel(
             "Descent Buddy wraps DXX-Redux to give Descent 1 and 2 players "
-            "a modern companion: mission management, session tracking, community "
-            "status, and more -- without touching the game itself."
+            "many tools and settings and many other features on a lightweight app."
         )
         desc.setObjectName("about-desc")
         desc.setWordWrap(True)
@@ -66,7 +65,7 @@ class AboutPanel(QWidget):
 
         layout.addStretch()
 
-        footer = QLabel("Not affiliated with Parallax Software or Interplay Productions.")
+        footer = QLabel("Not affiliated with Dxx-Redux, Parallax Software, or Interplay Productions. This is a fan project made for the community's free and open enjoyment.")
         footer.setObjectName("version-label")
         footer.setWordWrap(True)
         layout.addWidget(footer)

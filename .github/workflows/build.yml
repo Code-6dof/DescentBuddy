@@ -3,6 +3,7 @@ name: Build
 on:
   push:
     branches: [main, master]
+    tags: ["v*"]
   workflow_dispatch:
 
 jobs:
@@ -17,16 +18,20 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install pyinstaller PyQt6 PyQt6-Qt6 PyQt6-WebEngine requests
+        run: pip install pyinstaller PyQt6 PyQt6-Qt6 PyQt6-WebEngine requests pypresence
 
       - name: Build
         run: python -m PyInstaller descentbuddy_windows.spec --noconfirm --clean
+
+      - name: Zip output
+        shell: pwsh
+        run: Compress-Archive -Path dist\DescentBuddy\* -DestinationPath DescentBuddy-Windows.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: DescentBuddy-Windows
-          path: dist/DescentBuddy/
+          path: DescentBuddy-Windows.zip
           retention-days: 30
 
   build-linux:
@@ -45,7 +50,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install pyinstaller PyQt6 PyQt6-WebEngine requests
+        run: pip install pyinstaller PyQt6 PyQt6-WebEngine requests pypresence
 
       - name: Generate icon
         run: python3 build/generate_icon.py
@@ -83,3 +88,32 @@ jobs:
           name: DescentBuddy-Linux
           path: DescentBuddy-x86_64.AppImage
           retention-days: 30
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: DescentBuddy-Windows
+          path: release/
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: DescentBuddy-Linux
+          path: release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Descent Buddy ${{ github.ref_name }}"
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'b') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'rc') }}
+          files: |
+            release/DescentBuddy-Windows.zip
+            release/DescentBuddy-x86_64.AppImage
