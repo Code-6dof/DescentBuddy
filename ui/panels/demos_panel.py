@@ -102,6 +102,7 @@ class DemosPanel(QWidget):
 
         # Unsaved auto-demo rename section
         self._unsaved_container = QWidget()
+        self._unsaved_container.setObjectName("demo-rename-row")
         unsaved_layout = QVBoxLayout(self._unsaved_container)
         unsaved_layout.setContentsMargins(0, 0, 0, 0)
         unsaved_layout.setSpacing(6)
