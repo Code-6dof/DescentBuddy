@@ -356,8 +356,7 @@ class MissionsPanel(QWidget):
 
     def showEvent(self, event) -> None:
         super().showEvent(event)
-        if not self._catalog:
-            self._load_catalog()
+        self._load_catalog()
 
     def _load_catalog(self) -> None:
         self._catalog = load_catalog()
@@ -534,6 +533,7 @@ class MissionsPanel(QWidget):
     def start_background_update(self) -> None:
         if not self._catalog:
             self._catalog = load_catalog()
+            self._refresh_table()
         self._start_update_check()
 
     def on_game_changed(self, game_key: str) -> None:
