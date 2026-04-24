@@ -7,8 +7,8 @@ from pathlib import Path
 
 import requests
 
-_RDLADDER_KEY = "REDACTED_RDLADDER_KEY"
-_DESCENT_BUDDY_KEY = "REDACTED_DESCENT_BUDDY_KEY"
+from core.api_keys import DESCENT_BUDDY_KEY as _DESCENT_BUDDY_KEY
+from core.api_keys import RDLADDER_KEY as _RDLADDER_KEY
 
 
 def _config_dir() -> Path:

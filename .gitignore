@@ -11,3 +11,4 @@ DescentBuddy-Windows.zip
 .vscode/
 dxma-files.zip
 dxma_missions_complete_with_direct_links.csv
+core/api_keys.py

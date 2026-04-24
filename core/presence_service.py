@@ -4,8 +4,9 @@ from datetime import datetime, timezone
 
 import requests
 
+from core.api_keys import DESCENT_BUDDY_KEY as _API_KEY
+
 _PROJECT = "descent-buddy"
-_API_KEY = "REDACTED_DESCENT_BUDDY_KEY"
 _BASE = f"https://firestore.googleapis.com/v1/projects/{_PROJECT}/databases/(default)/documents"
 _RUN_QUERY_URL = f"https://firestore.googleapis.com/v1/projects/{_PROJECT}/databases/(default)/documents:runQuery"
 

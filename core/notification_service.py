@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import requests
 
-_RDLADDER_KEY = "REDACTED_RDLADDER_KEY"
+from core.api_keys import RDLADDER_KEY as _RDLADDER_KEY
 _RUN_QUERY_URL = (
     "https://firestore.googleapis.com/v1/projects/rdladder"
     "/databases/(default)/documents:runQuery"
