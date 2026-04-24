@@ -1,6 +1,10 @@
 """Main application window."""
 
-from PyQt6.QtCore import QTimer
+import sys
+from pathlib import Path
+
+from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
     QDialog,
@@ -135,7 +139,29 @@ class MainWindow(QMainWindow):
         logo_accent.setObjectName("header-logo-accent")
         layout.addWidget(logo_accent)
 
-        layout.addStretch()
+        layout.addStretch(1)
+
+        icon_label = QLabel()
+        icon_label.setObjectName("header-center-icon")
+        icon_label.setFixedSize(26, 26)
+        if hasattr(sys, "_MEIPASS"):
+            icon_path = Path(sys._MEIPASS) / "descentbuddy.png"
+        else:
+            icon_path = Path(__file__).parent.parent / "build" / "descentbuddy.png"
+        if icon_path.exists():
+            pixmap = QPixmap(str(icon_path)).scaled(
+                26, 26, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+            )
+            icon_label.setPixmap(pixmap)
+        layout.addWidget(icon_label)
+
+        layout.addSpacing(8)
+
+        tagline = QLabel("A Project D initiative by Code")
+        tagline.setObjectName("header-tagline")
+        layout.addWidget(tagline)
+
+        layout.addStretch(1)
 
         self._notification_inbox = NotificationInbox()
         layout.addWidget(self._notification_inbox)

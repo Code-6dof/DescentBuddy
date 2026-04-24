@@ -262,9 +262,7 @@ class CommunityPanel(QWidget):
         layout.addSpacing(10)
 
         self._login_error = QLabel("")
-        self._login_error.setStyleSheet(
-            "color: #cc1a00; font-size: 12px; background: transparent;"
-        )
+        self._login_error.setObjectName("login-error")
         self._login_error.setWordWrap(True)
         self._login_error.hide()
         layout.addWidget(self._login_error)
@@ -290,15 +288,12 @@ class CommunityPanel(QWidget):
 
         self._avatar_label = QLabel()
         self._avatar_label.setFixedSize(48, 48)
-        self._avatar_label.setStyleSheet("background: transparent;")
         header_row.addWidget(self._avatar_label, 0, Qt.AlignmentFlag.AlignVCenter)
 
         header_row.addSpacing(10)
 
         self._username_label = QLabel("")
-        self._username_label.setStyleSheet(
-            "color: #e8e0d0; font-size: 15px; font-weight: bold; background: transparent;"
-        )
+        self._username_label.setObjectName("community-username")
         header_row.addWidget(self._username_label, 0, Qt.AlignmentFlag.AlignVCenter)
 
         header_row.addSpacing(16)
@@ -322,7 +317,6 @@ class CommunityPanel(QWidget):
 
         divider1 = QFrame()
         divider1.setFrameShape(QFrame.Shape.HLine)
-        divider1.setStyleSheet("color: #1f1f1f;")
         layout.addWidget(divider1)
 
         layout.addSpacing(10)
@@ -335,7 +329,6 @@ class CommunityPanel(QWidget):
 
         divider_players = QFrame()
         divider_players.setFrameShape(QFrame.Shape.HLine)
-        divider_players.setStyleSheet("color: #1f1f1f;")
         layout.addWidget(divider_players)
 
         layout.addSpacing(14)
@@ -346,9 +339,7 @@ class CommunityPanel(QWidget):
         players_header.addWidget(self._players_label)
         players_header.addStretch()
         self._fetch_status = QLabel("")
-        self._fetch_status.setStyleSheet(
-            "color: #3a3530; font-size: 11px; background: transparent;"
-        )
+        self._fetch_status.setObjectName("fetch-status")
         players_header.addWidget(self._fetch_status)
         layout.addLayout(players_header)
 

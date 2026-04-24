@@ -23,6 +23,7 @@ from PyQt6.QtWidgets import (
 )
 
 from core.app_config import load_config, save_config
+from ui.theme import get_active_theme, THEMES
 from core.mission_catalog import (
     add_entries,
     fetch_new_d1_missions,
@@ -307,9 +308,10 @@ class _MissionDetailDialog(QDialog):
             info_layout.addLayout(row)
 
         mission_url = f"https://sectorgame.com/dxma/mission?m={entry['id']}"
+        accent = THEMES[get_active_theme()]["ACCENT_ORANGE"]
         info_layout.addSpacing(4)
         link_label = QLabel(
-            f'<a href="{mission_url}" style="color:#e07030;">'
+            f'<a href="{mission_url}" style="color:{accent};">'
             f"View on sectorgame.com/dxma</a>"
         )
         link_label.setOpenExternalLinks(True)

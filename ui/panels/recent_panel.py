@@ -39,17 +39,15 @@ _DEBUG_PATTERNS = [
     re.compile(r"opengl|gl error|gl_|memory|malloc|alloc", re.IGNORECASE),
 ]
 
-_NETGAME_START = re.compile(
-    r"starting netgame|netgame started|joining game|game started|net game|"
-    r"connected to server|hosting game|new game",
-    re.IGNORECASE,
+_NETLOG_LINE = re.compile(
+    r"^(\d{2}):(\d{2}):(\d{2})\s+(P#\d+)\s+(\w+)(?:\s+-\s+(.*))?"
 )
 
-_NETGAME_END = re.compile(
-    r"game over|netgame ended|game ended|leaving game|disconnected from|"
-    r"connection closed|host quit|server closed",
-    re.IGNORECASE,
+_TRAFFIC_DETAIL = re.compile(
+    r"OUT:\s*([\d.]+)KB/s\s+\d+PPS\s+IN:\s*([\d.]+)KB/s"
 )
+
+_SESSION_GAP_SECONDS = 300
 
 
 def _parse_gamelog_sessions(text: str) -> list[list[str]]:
@@ -68,26 +66,71 @@ def _parse_gamelog_sessions(text: str) -> list[list[str]]:
     return sessions
 
 
+def _ts_to_seconds(h: str, m: str, s: str) -> int:
+    return int(h) * 3600 + int(m) * 60 + int(s)
+
+
+def _summarize_session(lines: list[str]) -> dict:
+    first_ts = ""
+    last_ts = ""
+    dropped: list[str] = []
+    last_traffic_out = ""
+    last_traffic_in = ""
+
+    for line in lines:
+        match = _NETLOG_LINE.match(line)
+        if not match:
+            continue
+        ts = f"{match.group(1)}:{match.group(2)}:{match.group(3)}"
+        event = (match.group(5) or "").upper()
+        detail = match.group(6) or ""
+        if not first_ts:
+            first_ts = ts
+        last_ts = ts
+        if event == "DROPPED":
+            dropped.append(line.rstrip())
+        elif event == "TRAFFIC":
+            tm = _TRAFFIC_DETAIL.search(detail)
+            if tm:
+                last_traffic_out = tm.group(1)
+                last_traffic_in = tm.group(2)
+
+    return {
+        "lines": lines,
+        "first_ts": first_ts,
+        "last_ts": last_ts,
+        "dropped": dropped,
+        "last_traffic_out": last_traffic_out,
+        "last_traffic_in": last_traffic_in,
+    }
+
+
 def _parse_netlog_sessions(text: str) -> list[dict]:
-    lines = text.splitlines()
+    lines = [line for line in text.splitlines() if line.strip()]
+    if not lines:
+        return []
+
     sessions: list[dict] = []
     current: list[str] = []
-    in_session = False
-    complete = False
+    last_total_seconds = -1
+
     for line in lines:
-        if _NETGAME_START.search(line):
-            if in_session and current:
-                sessions.append({"lines": current, "complete": complete})
-            current = [line]
-            in_session = True
-            complete = False
-        elif _NETGAME_END.search(line) and in_session:
-            current.append(line)
-            complete = True
-        else:
-            current.append(line)
+        match = _NETLOG_LINE.match(line)
+        if match:
+            seconds = _ts_to_seconds(match.group(1), match.group(2), match.group(3))
+            if last_total_seconds >= 0:
+                gap = seconds - last_total_seconds
+                if gap < -82800:
+                    gap += 86400
+                if gap > _SESSION_GAP_SECONDS and current:
+                    sessions.append(_summarize_session(current))
+                    current = []
+            last_total_seconds = seconds
+        current.append(line)
+
     if current:
-        sessions.append({"lines": current, "complete": complete or not in_session})
+        sessions.append(_summarize_session(current))
+
     sessions.reverse()
     return sessions
 
@@ -396,12 +439,29 @@ class RecentPanel(QWidget):
         at_bottom = scrollbar.value() >= scrollbar.maximum() - 4
         parts: list[str] = []
         for i, session in enumerate(shown):
-            status = "COMPLETED" if session["complete"] else "IN PROGRESS / INCOMPLETE"
+            first = session["first_ts"]
+            last = session["last_ts"]
+            time_range = f"{first} — {last}" if first else "unknown time"
             parts.append("=" * 60)
-            parts.append(f"  NETGAME {i + 1}  [{status}]")
+            parts.append(f"  NETGAME {i + 1}   {time_range}")
             parts.append("=" * 60)
-            non_empty = [line for line in session["lines"] if line.strip()]
-            parts.extend(non_empty)
+
+            dropped = session["dropped"]
+            out_kb = session["last_traffic_out"]
+            in_kb = session["last_traffic_in"]
+
+            if dropped:
+                parts.append(f"  DROPPED: {len(dropped)} event(s)")
+                for d in dropped:
+                    parts.append(f"    {d.strip()}")
+            else:
+                parts.append("  DROPPED: none")
+
+            if out_kb or in_kb:
+                parts.append(f"  TRAFFIC (last): OUT {out_kb} KB/s   IN {in_kb} KB/s")
+
+            parts.append("-" * 60)
+            parts.extend(line.rstrip() for line in session["lines"] if line.strip())
             parts.append("")
         self._content_area.setPlainText("\n".join(parts))
         if at_bottom:

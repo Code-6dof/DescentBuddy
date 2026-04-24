@@ -23,16 +23,16 @@ class WikiPanel(QWidget):
         layout.addWidget(toolbar)
 
         divider = QWidget()
+        divider.setObjectName("browser-divider")
         divider.setFixedHeight(1)
-        divider.setStyleSheet("background-color: #1f1f1f;")
         layout.addWidget(divider)
 
         layout.addWidget(self._browser, stretch=1)
 
     def _build_toolbar(self) -> QWidget:
         bar = QWidget()
+        bar.setObjectName("browser-toolbar")
         bar.setFixedHeight(40)
-        bar.setStyleSheet("background-color: #0a0a0a; border: none;")
 
         row = QHBoxLayout(bar)
         row.setContentsMargins(12, 0, 12, 0)
@@ -58,9 +58,7 @@ class WikiPanel(QWidget):
         row.addWidget(reload_btn)
 
         url_label = QLabel(_WIKI_HOME)
-        url_label.setStyleSheet(
-            "color: #3a3530; font-size: 11px; letter-spacing: 1px; background: transparent;"
-        )
+        url_label.setObjectName("browser-url")
         url_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         row.addWidget(url_label, stretch=1)
 

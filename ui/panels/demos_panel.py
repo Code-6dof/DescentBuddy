@@ -90,7 +90,6 @@ class DemosPanel(QWidget):
 
         divider = QFrame()
         divider.setFrameShape(QFrame.Shape.HLine)
-        divider.setStyleSheet("color: #1f1f1f;")
         layout.addWidget(divider)
 
         layout.addSpacing(14)
@@ -120,9 +119,7 @@ class DemosPanel(QWidget):
             row.setSpacing(8)
 
             source_label = QLabel("")
-            source_label.setStyleSheet(
-                "color: #c8beb0; font-size: 13px; background: transparent;"
-            )
+            source_label.setObjectName("source-label")
             source_label.setMinimumWidth(120)
             row.addWidget(source_label)
 

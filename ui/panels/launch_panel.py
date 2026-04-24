@@ -141,9 +141,7 @@ class _GameCard(QWidget):
         meta_col.setContentsMargins(0, 4, 0, 0)
 
         self._filename_label = QLabel("No executable selected")
-        self._filename_label.setStyleSheet(
-            "font-size: 14px; font-weight: bold; color: #e8e0d0; background: transparent;"
-        )
+        self._filename_label.setObjectName("filename-main")
         meta_col.addWidget(self._filename_label)
 
         self._version_label = QLabel("")
@@ -470,7 +468,6 @@ class LaunchPanel(QWidget):
 
         divider_top = QFrame()
         divider_top.setFrameShape(QFrame.Shape.HLine)
-        divider_top.setStyleSheet("color: #1f1f1f;")
         root.addWidget(divider_top)
 
         root.addSpacing(24)
@@ -485,7 +482,6 @@ class LaunchPanel(QWidget):
 
         divider_mid = QFrame()
         divider_mid.setFrameShape(QFrame.Shape.HLine)
-        divider_mid.setStyleSheet("color: #1f1f1f;")
         root.addWidget(divider_mid)
 
         root.addSpacing(20)

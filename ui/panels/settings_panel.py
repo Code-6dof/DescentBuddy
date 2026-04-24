@@ -161,9 +161,7 @@ class SettingsDialog(QDialog):
         row.setSpacing(8)
 
         self._exe_path_display = QLabel("No executable selected")
-        self._exe_path_display.setStyleSheet(
-            "font-size: 12px; color: #9a9080; background: transparent;"
-        )
+        self._exe_path_display.setObjectName("exe-path-display")
         self._exe_path_display.setWordWrap(True)
         row.addWidget(self._exe_path_display, 1)
 

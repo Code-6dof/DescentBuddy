@@ -264,6 +264,13 @@ QLabel#header-logo-accent {{
     background: transparent;
 }}
 
+QLabel#header-tagline {{
+    font-size: 11px;
+    color: {TEXT_SECONDARY};
+    letter-spacing: 1px;
+    background: transparent;
+}}
+
 QPushButton#account-btn {{
     background: transparent;
     border: 1px solid {BORDER_COLOR};
@@ -878,6 +885,65 @@ QHeaderView::section {{
     padding: 4px 6px;
     font-size: 11px;
     letter-spacing: 1px;
+}}
+
+/* ── Browser toolbar panels ──────────────────────────── */
+QWidget#browser-divider {{
+    background-color: {BORDER_COLOR};
+}}
+
+QWidget#browser-toolbar {{
+    background-color: {BG_SIDEBAR};
+    border: none;
+}}
+
+QLabel#browser-url {{
+    color: {TEXT_DIM};
+    font-size: 11px;
+    letter-spacing: 1px;
+    background: transparent;
+}}
+
+/* ── Launch panel ────────────────────────────────────── */
+QLabel#filename-main {{
+    font-size: 14px;
+    font-weight: bold;
+    color: {TEXT_PRIMARY};
+    background: transparent;
+}}
+
+/* ── Community panel ─────────────────────────────────── */
+QLabel#login-error {{
+    color: {ACCENT_RED};
+    font-size: 12px;
+    background: transparent;
+}}
+
+QLabel#community-username {{
+    font-size: 15px;
+    font-weight: bold;
+    color: {TEXT_PRIMARY};
+    background: transparent;
+}}
+
+QLabel#fetch-status {{
+    color: {TEXT_DIM};
+    font-size: 11px;
+    background: transparent;
+}}
+
+/* ── Settings panel ──────────────────────────────────── */
+QLabel#exe-path-display {{
+    font-size: 12px;
+    color: {TEXT_SECONDARY};
+    background: transparent;
+}}
+
+/* ── Demos panel ─────────────────────────────────────── */
+QLabel#source-label {{
+    font-size: 13px;
+    color: {TEXT_PRIMARY};
+    background: transparent;
 }}
 """
 
