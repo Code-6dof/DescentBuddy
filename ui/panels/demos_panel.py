@@ -114,6 +114,7 @@ class DemosPanel(QWidget):
         self._rename_rows: list[tuple[QLabel, QLineEdit, QPushButton]] = []
         for _ in range(2):
             row_widget = QWidget()
+            row_widget.setObjectName("demo-rename-row")
             row = QHBoxLayout(row_widget)
             row.setContentsMargins(0, 0, 0, 0)
             row.setSpacing(8)

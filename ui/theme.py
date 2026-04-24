@@ -940,6 +940,10 @@ QLabel#exe-path-display {{
 }}
 
 /* ── Demos panel ─────────────────────────────────────── */
+QWidget#demo-rename-row {{
+    background: transparent;
+}}
+
 QLabel#source-label {{
     font-size: 13px;
     color: {TEXT_PRIMARY};

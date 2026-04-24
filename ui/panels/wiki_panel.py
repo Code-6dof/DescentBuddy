@@ -17,6 +17,7 @@ class WikiPanel(QWidget):
         layout.setSpacing(0)
 
         self._browser = QWebEngineView(self)
+        self._browser.setZoomFactor(0.75)
         self._browser.load(QUrl(_WIKI_HOME))
 
         toolbar = self._build_toolbar()

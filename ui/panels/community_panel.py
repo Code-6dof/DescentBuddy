@@ -403,10 +403,17 @@ class CommunityPanel(QWidget):
         layout.addLayout(discord_row)
 
         if sys.platform != "win32":
-            layout.addSpacing(8)
-            note = QLabel(
-                "Linux setup: Discord must expose its IPC socket at "
-                "$XDG_RUNTIME_DIR/discord-ipc-0.\n"
+            layout.addSpacing(4)
+
+            self._discord_setup_toggle = QPushButton("Show Linux setup instructions")
+            self._discord_setup_toggle.setObjectName("settings-collapse-btn")
+            self._discord_setup_toggle.setCheckable(True)
+            self._discord_setup_toggle.setChecked(False)
+            self._discord_setup_toggle.clicked.connect(self._toggle_discord_setup)
+            layout.addWidget(self._discord_setup_toggle)
+
+            self._discord_setup_note = QLabel(
+                "Discord must expose its IPC socket at $XDG_RUNTIME_DIR/discord-ipc-0.\n"
                 "Flatpak/Goofcord users: run once in a terminal --\n"
                 "  ln -sf $XDG_RUNTIME_DIR/.flatpak/<app-id>/xdg-run/discord-ipc-0 "
                 "$XDG_RUNTIME_DIR/discord-ipc-0\n"
@@ -414,9 +421,10 @@ class CommunityPanel(QWidget):
                 "io.github.milkshiift.GoofCord as appropriate.\n"
                 "For Goofcord, also enable arRPC in its settings."
             )
-            note.setObjectName("section-label")
-            note.setWordWrap(True)
-            layout.addWidget(note)
+            self._discord_setup_note.setObjectName("section-label")
+            self._discord_setup_note.setWordWrap(True)
+            self._discord_setup_note.setVisible(False)
+            layout.addWidget(self._discord_setup_note)
 
         layout.addStretch()
         return page
@@ -433,6 +441,12 @@ class CommunityPanel(QWidget):
         if not enabled:
             from core.discord_presence import clear_presence
             clear_presence()
+
+    def _toggle_discord_setup(self, checked: bool) -> None:
+        self._discord_setup_note.setVisible(checked)
+        self._discord_setup_toggle.setText(
+            "Hide Linux setup instructions" if checked else "Show Linux setup instructions"
+        )
 
     def _try_restore_session(self) -> None:
         session = load_session()
