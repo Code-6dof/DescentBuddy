@@ -3,15 +3,22 @@
 # Run from the project root on a Windows machine:
 #   pyinstaller descentbuddy_windows.spec --noconfirm --clean
 
+import glob
 import sys
 from pathlib import Path
 
 block_cipher = None
 
+# Collect ICU DLLs that Qt6Core requires. PyInstaller's PyQt6 hook does not
+# reliably pick these up on all build hosts, so we find and include them
+# explicitly. They live next to Qt6Core.dll in the Qt6 bin directory.
+_qt6_bin = Path(sys.prefix) / 'Lib' / 'site-packages' / 'PyQt6' / 'Qt6' / 'bin'
+_icu_dlls = [(str(p), 'PyQt6/Qt6/bin') for p in _qt6_bin.glob('icu*.dll')]
+
 a = Analysis(
     ['main.py'],
     pathex=['.'],
-    binaries=[],
+    binaries=_icu_dlls,
     datas=[
         ('data/notifications', 'data/notifications'),
         ('build/descentbuddy.png', '.'),

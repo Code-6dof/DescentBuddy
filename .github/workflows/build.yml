@@ -17,7 +17,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install pyinstaller PyQt6 PyQt6-WebEngine requests
+        run: pip install pyinstaller PyQt6 PyQt6-Qt6 PyQt6-WebEngine requests
 
       - name: Build
         run: python -m PyInstaller descentbuddy_windows.spec --noconfirm --clean
