@@ -3,8 +3,8 @@
 import sys
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QColor, QPixmap
+from PyQt6.QtCore import QUrl, Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QColor, QDesktopServices, QPixmap
 from PyQt6.QtWidgets import (
     QAbstractItemView,
     QDialog,
@@ -287,6 +287,15 @@ class MissionsPanel(QWidget):
         header_row.addSpacing(8)
         header_row.addWidget(check_btn)
 
+        mirror_btn = QPushButton("Download Mirror Bulk")
+        mirror_btn.setToolTip(
+            "Download a bulk archive of DXMA missions and images from April 2021 (~1 GB).\n"
+            "Extract into your missions directory to populate the local archive."
+        )
+        mirror_btn.clicked.connect(self._open_mirror_download)
+        header_row.addSpacing(6)
+        header_row.addWidget(mirror_btn)
+
         layout.addLayout(header_row)
 
         subtitle = QLabel("Community missions from sectorgame.com/dxma")
@@ -366,6 +375,9 @@ class MissionsPanel(QWidget):
     def showEvent(self, event) -> None:
         super().showEvent(event)
         self._load_catalog()
+
+    def _open_mirror_download(self) -> None:
+        QDesktopServices.openUrl(QUrl("https://2ar.nl/dl/dxma-files.zip"))
 
     def _load_catalog(self) -> None:
         self._catalog = load_catalog()
