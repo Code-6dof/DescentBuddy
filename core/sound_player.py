@@ -40,8 +40,8 @@ def sounds_dir() -> Path:
 
 
 def list_sounds() -> list[tuple[str, str]]:
-    """Return list of (stem, label) pairs for available notification sounds, with None first."""
-    result: list[tuple[str, str]] = [("none", "None")]
+    """Return list of (stem, label) pairs for available notification sounds."""
+    result: list[tuple[str, str]] = []
     d = sounds_dir()
     if d.exists():
         for f in sorted(d.glob("*.mp3")):
@@ -51,12 +51,9 @@ def list_sounds() -> list[tuple[str, str]]:
 
 
 def default_sound() -> str:
-    """Return the stem of the first available sound, or 'none' if there are none."""
+    """Return the stem of the first available sound, or empty string if there are none."""
     sounds = list_sounds()
-    for stem, _ in sounds:
-        if stem != "none":
-            return stem
-    return "none"
+    return sounds[0][0] if sounds else ""
 
 
 def play_notification_sound(stem: str) -> None:
