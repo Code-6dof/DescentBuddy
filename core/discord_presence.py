@@ -102,8 +102,10 @@ class _DiscordPresence:
                 details=game_name,
                 state=state,
                 start=int(start_timestamp),
-                large_image=game_key,
-                large_text=game_name,
+                large_image="descentbuddy",
+                large_text="DescentBuddy",
+                small_image=game_key,
+                small_text=game_name,
             )
         except Exception as exc:
             print(f"[discord] update failed: {exc!r}")
