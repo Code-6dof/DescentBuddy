@@ -96,7 +96,8 @@ class _DiscordPresence:
             self._try_connect()
         if not self._connected:
             return
-        state = f"DXX-Redux {version}" if version else "DXX-Redux"
+        port = "D1X-Redux" if game_key == "d1" else "D2X-Redux"
+        state = f"{port} {version}" if version else port
         try:
             self._rpc.update(
                 details=game_name,
