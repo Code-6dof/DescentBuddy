@@ -132,7 +132,7 @@ class DemosPanel(QWidget):
             row.addWidget(new_name_edit, 1)
 
             save_btn = QPushButton("Rename")
-            save_btn.setFixedWidth(76)
+            save_btn.setMinimumWidth(76)
             row.addWidget(save_btn)
 
             unsaved_layout.addWidget(row_widget)

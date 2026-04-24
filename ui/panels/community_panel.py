@@ -311,7 +311,7 @@ class CommunityPanel(QWidget):
         header_row.addSpacing(12)
 
         self._sign_out_btn = QPushButton("Sign Out")
-        self._sign_out_btn.setFixedWidth(80)
+        self._sign_out_btn.setMinimumWidth(90)
         self._sign_out_btn.clicked.connect(self._sign_out)
         header_row.addWidget(self._sign_out_btn, 0, Qt.AlignmentFlag.AlignVCenter)
 
@@ -708,7 +708,7 @@ class CommunityPanel(QWidget):
 
             if player["uid"] != own_uid:
                 invite_btn = QPushButton("Invite")
-                invite_btn.setFixedWidth(58)
+                invite_btn.setMinimumWidth(68)
                 invite_btn.clicked.connect(
                     lambda checked, uid=player["uid"], uname=player["username"], btn=invite_btn:
                         self._send_invite(uid, uname, btn)

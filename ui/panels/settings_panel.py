@@ -166,7 +166,7 @@ class SettingsDialog(QDialog):
         row.addWidget(self._exe_path_display, 1)
 
         change_btn = QPushButton("Change...")
-        change_btn.setFixedWidth(80)
+        change_btn.setMinimumWidth(80)
         change_btn.clicked.connect(self._browse_exe)
         row.addWidget(change_btn)
 
@@ -190,12 +190,12 @@ class SettingsDialog(QDialog):
         ini_row.addWidget(ini_edit, 1)
 
         ini_browse = QPushButton("Browse")
-        ini_browse.setFixedWidth(76)
+        ini_browse.setMinimumWidth(76)
         ini_browse.clicked.connect(lambda _, g=game: self._browse_ini(g))
         ini_row.addWidget(ini_browse)
 
         activate_btn = QPushButton("Activate")
-        activate_btn.setFixedWidth(76)
+        activate_btn.setMinimumWidth(76)
         activate_btn.setVisible(False)
         activate_btn.setToolTip(
             "Copy the default INI template to make it the active configuration"
@@ -228,7 +228,7 @@ class SettingsDialog(QDialog):
         gamelog_row.addWidget(gamelog_edit, 1)
 
         gamelog_browse = QPushButton("Browse")
-        gamelog_browse.setFixedWidth(76)
+        gamelog_browse.setMinimumWidth(76)
         gamelog_browse.clicked.connect(lambda _, g=game: self._browse_gamelog(g))
         gamelog_row.addWidget(gamelog_browse)
 
@@ -263,7 +263,7 @@ class SettingsDialog(QDialog):
         netlog_row.addWidget(netlog_edit, 1)
 
         netlog_browse = QPushButton("Browse")
-        netlog_browse.setFixedWidth(76)
+        netlog_browse.setMinimumWidth(76)
         netlog_browse.clicked.connect(lambda _, g=game: self._browse_netlog(g))
         netlog_row.addWidget(netlog_browse)
 
@@ -292,7 +292,7 @@ class SettingsDialog(QDialog):
         dir_row.addWidget(dir_edit, 1)
 
         dir_browse = QPushButton("Browse")
-        dir_browse.setFixedWidth(76)
+        dir_browse.setMinimumWidth(76)
         dir_browse.clicked.connect(lambda _, g=game: self._browse_missions_dir(g))
         dir_row.addWidget(dir_browse)
 
@@ -323,7 +323,7 @@ class SettingsDialog(QDialog):
 
         archive_browse = QPushButton("Browse")
         
-        archive_browse.setFixedWidth(76)
+        archive_browse.setMinimumWidth(76)
         archive_browse.clicked.connect(lambda _, g=game: self._browse_archive(g))
         archive_row.addWidget(archive_browse)
 
