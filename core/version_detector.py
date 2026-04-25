@@ -29,12 +29,12 @@ def detect_version(executable_path: str) -> str:
     if path.suffix.lower() == ".appimage":
         env["APPIMAGE_EXTRACT_AND_RUN"] = "1"
 
+    # Prevent the game from opening a window or audio device during version
+    # detection. SDL_VIDEODRIVER=dummy is cross-platform (Linux, Windows, macOS).
+    env["SDL_VIDEODRIVER"] = "dummy"
+    env["SDL_AUDIODRIVER"] = "dummy"
     if sys.platform != "win32":
-        # Prevent the game from opening a window during version detection.
-        # SDL checks SDL_VIDEODRIVER first; setting it to "dummy" keeps it
-        # headless.  Clearing DISPLAY/WAYLAND_DISPLAY adds a second layer of
-        # protection for non-SDL display init.
-        env["SDL_VIDEODRIVER"] = "dummy"
+        # Belt-and-suspenders: also unset X11/Wayland display vars on Linux.
         env["DISPLAY"] = ""
         env["WAYLAND_DISPLAY"] = ""
 
