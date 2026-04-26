@@ -15,6 +15,28 @@ block_cipher = None
 _qt6_bin = Path(sys.prefix) / 'Lib' / 'site-packages' / 'PyQt6' / 'Qt6' / 'bin'
 _icu_dlls = [(str(p), 'PyQt6/Qt6/bin') for p in _qt6_bin.glob('icu*.dll')]
 
+# Explicitly collect Qt plugin folders that PyInstaller sometimes misses when
+# building cross-platform (e.g. under Wine). Without 'platforms/qwindows.dll'
+# the app fails immediately with "no Qt platform plugin could be initialized".
+_qt6_plugins = Path(sys.prefix) / 'Lib' / 'site-packages' / 'PyQt6' / 'Qt6' / 'plugins'
+_qt6_plugin_datas = []
+for _plugin_dir in ('platforms', 'styles', 'imageformats', 'tls', 'multimedia'):
+    _src = _qt6_plugins / _plugin_dir
+    if _src.exists():
+        _qt6_plugin_datas.append((str(_src / '*.dll'), f'PyQt6/Qt6/plugins/{_plugin_dir}'))
+
+# Collect QtWebEngineProcess.exe and supporting resources/translations that
+# PyInstaller misses when building under Wine.
+_qt6_base = Path(sys.prefix) / 'Lib' / 'site-packages' / 'PyQt6' / 'Qt6'
+_webengine_datas = []
+_webengine_proc = _qt6_base / 'bin' / 'QtWebEngineProcess.exe'
+if _webengine_proc.exists():
+    _webengine_datas.append((str(_webengine_proc), 'PyQt6/Qt6/bin'))
+for _res_dir in ('resources', 'translations'):
+    _src = _qt6_base / _res_dir
+    if _src.exists():
+        _webengine_datas.append((str(_src), f'PyQt6/Qt6/{_res_dir}'))
+
 a = Analysis(
     ['main.py'],
     pathex=['.'],
@@ -22,6 +44,8 @@ a = Analysis(
     datas=[
         ('data/notifications', 'data/notifications'),
         ('build/descentbuddy.png', '.'),
+        *_qt6_plugin_datas,
+        *_webengine_datas,
     ],
     hiddenimports=[
         'core.api_keys',

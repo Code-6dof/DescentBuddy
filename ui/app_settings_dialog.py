@@ -22,7 +22,12 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from core.app_config import load_config, save_config
+from core.app_config import load_config, save_config, config_file_path
+
+
+def _config_file_display() -> str:
+    """Return a human-readable config file path for display."""
+    return str(config_file_path())
 from ui.theme import THEME_LABELS, apply_theme, get_active_theme, list_theme_keys
 
 
@@ -322,6 +327,28 @@ class AppSettingsDialog(QDialog):
         self._dn_status.setObjectName("section-label")
         inner.addWidget(self._dn_status)
 
+        inner.addSpacing(28)
+        self._add_divider(inner)
+        inner.addSpacing(24)
+
+        # ── Data ─────────────────────────────────────────────────────
+        self._add_section_label("DATA", inner)
+        inner.addSpacing(10)
+
+        reset_row = QHBoxLayout()
+        self._reset_btn = QPushButton("Reset Config File")
+        self._reset_btn.clicked.connect(self._on_reset_config)
+        reset_row.addWidget(self._reset_btn)
+        reset_row.addSpacing(12)
+        self._reset_status = QLabel(
+            f"Clears all settings and saved paths. Config is stored at:\n"
+            f"{_config_file_display()}"
+        )
+        self._reset_status.setObjectName("version-label")
+        self._reset_status.setWordWrap(True)
+        reset_row.addWidget(self._reset_status, 1)
+        inner.addLayout(reset_row)
+
         inner.addStretch()
 
         scroll = QScrollArea()
@@ -415,3 +442,21 @@ class AppSettingsDialog(QDialog):
         save_config(cfg)
         self._dn_status.setText(f"Set to: {name}" if name else "Using account name.")
         self.display_name_changed.emit(name)
+
+    def _on_reset_config(self) -> None:
+        from PyQt6.QtWidgets import QMessageBox
+        result = QMessageBox.warning(
+            self,
+            "Reset Config File",
+            "This will delete your config file, removing all saved paths, settings, "
+            "and play time records.\n\nThe application will close. Continue?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+        )
+        if result != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            config_file_path().unlink(missing_ok=True)
+        except OSError as exc:
+            self._reset_status.setText(f"Error: {exc}")
+            return
+        QApplication.instance().quit()

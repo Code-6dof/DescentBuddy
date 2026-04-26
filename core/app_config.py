@@ -21,6 +21,11 @@ def _config_dir() -> Path:
 _CONFIG_FILE = _config_dir() / "config.json"
 
 
+def config_file_path() -> Path:
+    """Return the absolute path to the config file (may not exist yet)."""
+    return _CONFIG_FILE
+
+
 def load_config() -> dict:
     if not _CONFIG_FILE.exists():
         return {}

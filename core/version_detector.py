@@ -23,9 +23,16 @@ def detect_version(executable_path: str) -> str:
     if not path.is_file():
         return "File not found"
 
-    # Try running with --version flag
+    # Try binary scanning first — fast, safe, and never spawns the game process.
+    # DXX-Redux does not reliably exit on --version flags and may instead launch
+    # normally, showing OpenGL error dialogs if the environment lacks a display.
+    version = _scan_binary(path)
+    if version and version != "Unknown":
+        return version
+
+    # Binary scan found nothing; attempt to run with --version as a last resort.
     env = os.environ.copy()
-    # AppImages require FUSE to mount; APPIMAGE_EXTRACT_AND_RUN bypasses that
+    # AppImages require FUSE to mount; APPIMAGE_EXTRACT_AND_RUN bypasses that.
     if path.suffix.lower() == ".appimage":
         env["APPIMAGE_EXTRACT_AND_RUN"] = "1"
 
@@ -44,19 +51,18 @@ def detect_version(executable_path: str) -> str:
                 [str(path), flag],
                 capture_output=True,
                 text=True,
-                timeout=10,
+                timeout=3,
                 env=env,
             )
             output = (result.stdout + result.stderr).strip()
             if output:
-                version = _parse_version(output)
-                if version:
-                    return version
+                parsed = _parse_version(output)
+                if parsed:
+                    return parsed
         except (subprocess.TimeoutExpired, OSError, PermissionError):
             continue
 
-    # Fallback: scan binary for embedded version strings
-    return _scan_binary(path)
+    return "Unknown"
 
 
 def _parse_version(text: str) -> str:

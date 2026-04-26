@@ -244,6 +244,12 @@ class _GameCard(QWidget):
 
         px = self._icon_provider.icon(QFileInfo(path)).pixmap(_ICON_SIZE, _ICON_SIZE)
         if not px.isNull():
+            if px.width() < _ICON_SIZE or px.height() < _ICON_SIZE:
+                px = px.scaled(
+                    _ICON_SIZE, _ICON_SIZE,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
             self._icon_label.setPixmap(px)
             self._icon_label.update()
             return
