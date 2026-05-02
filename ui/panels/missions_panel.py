@@ -329,12 +329,12 @@ class _MissionDetailDialog(QDialog):
         btn_row = QHBoxLayout()
         btn_row.addStretch()
 
-        if not entry.get("installed"):
-            install_btn = QPushButton("Install")
-            install_btn.setFixedWidth(100)
-            install_btn.clicked.connect(self._on_install_clicked)
-            btn_row.addWidget(install_btn)
-            btn_row.addSpacing(8)
+        install_label = "Reinstall" if entry.get("installed") else "Install"
+        install_btn = QPushButton(install_label)
+        install_btn.setFixedWidth(100)
+        install_btn.clicked.connect(self._on_install_clicked)
+        btn_row.addWidget(install_btn)
+        btn_row.addSpacing(8)
 
         close_btn = QPushButton("Close")
         close_btn.setFixedWidth(80)
