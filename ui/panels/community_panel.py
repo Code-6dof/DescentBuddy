@@ -1,10 +1,11 @@
-"""Community panel — see who is online and manage your presence."""
+"""Community panel — see who is online, manage presence, and discover game endpoints."""
 
 import sys
 
 from PyQt6.QtCore import Qt, QRect, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPixmap
 from PyQt6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QComboBox,
     QFrame,
@@ -53,6 +54,8 @@ _COMBO_KEYS = ["online", "busy", "dnd", "invisible"]
 
 _HEARTBEAT_MS = 60_000
 _PRESENCE_FETCH_MS = 30_000
+_DISCOVERY_HEARTBEAT_MS = 120_000
+_DISCOVERY_FETCH_MS = 30_000
 
 
 def _make_avatar_pixmap(initial: str, color: str) -> QPixmap:
@@ -73,6 +76,8 @@ def _make_avatar_pixmap(initial: str, color: str) -> QPixmap:
     painter.end()
     return pixmap
 
+
+# ── Background threads ─────────────────────────────────────────────────────────
 
 class _SignInThread(QThread):
     success = pyqtSignal(dict)
@@ -176,6 +181,47 @@ class _IdTokenRefreshThread(QThread):
         self.done.emit(get_fresh_id_token(self._refresh_token) or "")
 
 
+class _FetchPublicIpThread(QThread):
+    result = pyqtSignal(str)
+
+    def run(self) -> None:
+        from core.discovery_service import get_public_ip
+        self.result.emit(get_public_ip() or "")
+
+
+class _DiscoveryHeartbeatThread(QThread):
+    def __init__(self, uid: str, username: str, port: int, status: str, parent=None) -> None:
+        super().__init__(parent)
+        self._uid = uid
+        self._username = username
+        self._port = port
+        self._status = status
+
+    def run(self) -> None:
+        from core.discovery_service import register
+        register(self._uid, self._username, self._port, self._status)
+
+
+class _FetchDiscoveryPlayersThread(QThread):
+    result = pyqtSignal(list)
+
+    def run(self) -> None:
+        from core.discovery_service import fetch_players
+        self.result.emit(fetch_players())
+
+
+class _UnregisterThread(QThread):
+    def __init__(self, uid: str, parent=None) -> None:
+        super().__init__(parent)
+        self._uid = uid
+
+    def run(self) -> None:
+        from core.discovery_service import unregister
+        unregister(self._uid)
+
+
+# ── Community panel ────────────────────────────────────────────────────────────
+
 class CommunityPanel(QWidget):
     user_signed_in = pyqtSignal(str, str)   # uid, id_token
     user_signed_out = pyqtSignal()
@@ -190,6 +236,11 @@ class CommunityPanel(QWidget):
         self._threads: list[QThread] = []
         self._display_name: str = load_config().get("community_display_name", "")
 
+        # Discovery state
+        self._hosting: bool = load_config().get("discovery_hosting", False)
+        self._public_ip: str | None = None
+        self._discovery_port: int = load_config().get("discovery_port", 5197)
+
         self._heartbeat_timer = QTimer(self)
         self._heartbeat_timer.setInterval(_HEARTBEAT_MS)
         self._heartbeat_timer.timeout.connect(self._heartbeat)
@@ -197,6 +248,14 @@ class CommunityPanel(QWidget):
         self._presence_timer = QTimer(self)
         self._presence_timer.setInterval(_PRESENCE_FETCH_MS)
         self._presence_timer.timeout.connect(self._fetch_players)
+
+        self._discovery_heartbeat_timer = QTimer(self)
+        self._discovery_heartbeat_timer.setInterval(_DISCOVERY_HEARTBEAT_MS)
+        self._discovery_heartbeat_timer.timeout.connect(self._do_discovery_heartbeat)
+
+        self._discovery_fetch_timer = QTimer(self)
+        self._discovery_fetch_timer.setInterval(_DISCOVERY_FETCH_MS)
+        self._discovery_fetch_timer.timeout.connect(self._fetch_discovery_players)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -369,6 +428,70 @@ class CommunityPanel(QWidget):
         self._bottom_status.setObjectName("section-label")
         layout.addWidget(self._bottom_status)
 
+        # ── Network Discovery section ──────────────────────────────────
+        layout.addSpacing(20)
+
+        net_divider = QFrame()
+        net_divider.setFrameShape(QFrame.Shape.HLine)
+        layout.addWidget(net_divider)
+
+        layout.addSpacing(14)
+
+        net_header_row = QHBoxLayout()
+        net_header_row.setSpacing(0)
+        self._discovery_label = QLabel("NETWORK DISCOVERY")
+        self._discovery_label.setObjectName("section-label")
+        net_header_row.addWidget(self._discovery_label)
+        net_header_row.addStretch()
+        self._host_btn = QPushButton("Host: OFF")
+        self._host_btn.setCheckable(True)
+        self._host_btn.setMinimumWidth(92)
+        self._host_btn.clicked.connect(self._toggle_hosting)
+        net_header_row.addWidget(self._host_btn)
+        layout.addLayout(net_header_row)
+
+        layout.addSpacing(6)
+
+        self._my_endpoint_row = QWidget()
+        ep_layout = QHBoxLayout(self._my_endpoint_row)
+        ep_layout.setContentsMargins(0, 0, 0, 0)
+        ep_layout.setSpacing(8)
+        self._my_endpoint_label = QLabel("")
+        self._my_endpoint_label.setObjectName("section-label")
+        ep_layout.addWidget(self._my_endpoint_label, 1)
+        copy_ep_btn = QPushButton("Copy")
+        copy_ep_btn.setFixedWidth(60)
+        copy_ep_btn.clicked.connect(self._copy_my_endpoint)
+        ep_layout.addWidget(copy_ep_btn)
+        self._my_endpoint_row.setVisible(False)
+        layout.addWidget(self._my_endpoint_row)
+
+        layout.addSpacing(8)
+
+        self._discovery_players_label = QLabel("DISCOVERABLE PLAYERS")
+        self._discovery_players_label.setObjectName("section-label")
+        layout.addWidget(self._discovery_players_label)
+
+        layout.addSpacing(6)
+
+        self._discovery_table = QTableWidget()
+        self._discovery_table.setObjectName("mission-table")
+        self._discovery_table.setColumnCount(4)
+        self._discovery_table.setHorizontalHeaderLabels(["", "PLAYER", "ENDPOINT", ""])
+        self._discovery_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self._discovery_table.setColumnWidth(0, 28)
+        self._discovery_table.setColumnWidth(2, 148)
+        self._discovery_table.setColumnWidth(3, 60)
+        self._discovery_table.horizontalHeader().setStretchLastSection(False)
+        self._discovery_table.verticalHeader().setVisible(False)
+        self._discovery_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self._discovery_table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+        self._discovery_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self._discovery_table.setShowGrid(False)
+        self._discovery_table.setMaximumHeight(180)
+        layout.addWidget(self._discovery_table)
+
+        # ── Discord section ────────────────────────────────────────────
         layout.addSpacing(20)
 
         discord_divider = QFrame()
@@ -520,6 +643,15 @@ class CommunityPanel(QWidget):
 
         self._fetch_players()
         self._presence_timer.start()
+
+        # Start discovery
+        self._discovery_fetch_timer.start()
+        self._fetch_discovery_players()
+        if self._hosting:
+            self._host_btn.setChecked(True)
+            self._host_btn.setText("Host: ON")
+            self._start_hosting()
+
         self.user_signed_in.emit(
             self._session["uid"], self._session.get("idToken", "")
         )
@@ -559,13 +691,29 @@ class CommunityPanel(QWidget):
     def _sign_out(self) -> None:
         self._heartbeat_timer.stop()
         self._presence_timer.stop()
+        self._discovery_heartbeat_timer.stop()
+        self._discovery_fetch_timer.stop()
+
         if self._session and self._db_token and self._current_status != "invisible":
             thread = _DeletePresenceThread(self._session["uid"], self._db_token, self)
             thread.finished.connect(lambda: self._prune_thread(thread))
             self._threads.append(thread)
             thread.start()
+
+        if self._hosting and self._session:
+            thread = _UnregisterThread(self._session["uid"], self)
+            thread.finished.connect(lambda: self._prune_thread(thread))
+            self._threads.append(thread)
+            thread.start()
+
         self._session = None
         self._db_token = None
+        self._public_ip = None
+        self._host_btn.setChecked(False)
+        self._host_btn.setText("Host: OFF")
+        self._my_endpoint_row.setVisible(False)
+        self._discovery_table.setRowCount(0)
+        self._discovery_players_label.setText("DISCOVERABLE PLAYERS")
         clear_session()
         self._stack.setCurrentIndex(0)
         self.user_signed_out.emit()
@@ -663,8 +811,11 @@ class CommunityPanel(QWidget):
             self._write_presence_now()
             QTimer.singleShot(1500, self._fetch_players)
 
+        if self._hosting and self._public_ip:
+            self._do_discovery_heartbeat()
+
     # ------------------------------------------------------------------
-    # Player list
+    # Player list (Firestore presence)
     # ------------------------------------------------------------------
 
     def _fetch_players(self) -> None:
@@ -749,15 +900,135 @@ class CommunityPanel(QWidget):
         thread.start()
 
     # ------------------------------------------------------------------
+    # Network discovery
+    # ------------------------------------------------------------------
+
+    def _toggle_hosting(self, checked: bool) -> None:
+        self._hosting = checked
+        config = load_config()
+        config["discovery_hosting"] = checked
+        save_config(config)
+        if checked:
+            self._host_btn.setText("Host: ON")
+            self._start_hosting()
+        else:
+            self._host_btn.setText("Host: OFF")
+            self._stop_hosting()
+
+    def _start_hosting(self) -> None:
+        if not self._session:
+            return
+        self._my_endpoint_label.setText("Detecting public IP...")
+        self._my_endpoint_row.setVisible(True)
+        thread = _FetchPublicIpThread(self)
+        thread.result.connect(self._on_public_ip_fetched)
+        thread.finished.connect(lambda: self._prune_thread(thread))
+        self._threads.append(thread)
+        thread.start()
+
+    def _on_public_ip_fetched(self, ip: str) -> None:
+        if not self._hosting:
+            return
+        if not ip:
+            self._my_endpoint_label.setText("Could not detect public IP.")
+            return
+        self._public_ip = ip
+        endpoint = f"{ip}:{self._discovery_port}"
+        self._my_endpoint_label.setText(f"Your endpoint: {endpoint}")
+        self._do_discovery_heartbeat()
+        self._discovery_heartbeat_timer.start()
+        QTimer.singleShot(2000, self._fetch_discovery_players)
+
+    def _stop_hosting(self) -> None:
+        self._discovery_heartbeat_timer.stop()
+        self._my_endpoint_row.setVisible(False)
+        if self._session and self._public_ip:
+            uid = self._session["uid"]
+            thread = _UnregisterThread(uid, self)
+            thread.finished.connect(lambda: self._prune_thread(thread))
+            thread.finished.connect(lambda: QTimer.singleShot(1000, self._fetch_discovery_players))
+            self._threads.append(thread)
+            thread.start()
+        self._public_ip = None
+
+    def _do_discovery_heartbeat(self) -> None:
+        if not self._session or not self._public_ip:
+            return
+        username = self._display_name or self._session["username"]
+        thread = _DiscoveryHeartbeatThread(
+            self._session["uid"],
+            username,
+            self._discovery_port,
+            self._current_status,
+            self,
+        )
+        thread.finished.connect(lambda: self._prune_thread(thread))
+        self._threads.append(thread)
+        thread.start()
+
+    def _fetch_discovery_players(self) -> None:
+        thread = _FetchDiscoveryPlayersThread(self)
+        thread.result.connect(self._on_discovery_players_fetched)
+        thread.finished.connect(lambda: self._prune_thread(thread))
+        self._threads.append(thread)
+        thread.start()
+
+    def _on_discovery_players_fetched(self, players: list) -> None:
+        own_uid = self._session["uid"] if self._session else None
+        self._discovery_players_label.setText(f"DISCOVERABLE PLAYERS ({len(players)})")
+        self._discovery_table.setRowCount(len(players))
+
+        for row, player in enumerate(players):
+            status = player.get("status", "online")
+            color = _STATUS_COLORS.get(status, "#3a3530")
+
+            dot = QTableWidgetItem("●")
+            dot.setForeground(QColor(color))
+            dot.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            dot.setFlags(dot.flags() & ~Qt.ItemFlag.ItemIsSelectable)
+            self._discovery_table.setItem(row, 0, dot)
+
+            name_text = player.get("username", "?")
+            if player.get("uid") == own_uid:
+                name_text += " (you)"
+            name_item = QTableWidgetItem(name_text)
+            name_item.setFlags(name_item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
+            self._discovery_table.setItem(row, 1, name_item)
+
+            endpoint = f"{player.get('ip', '?')}:{player.get('port', 5197)}"
+            ep_item = QTableWidgetItem(endpoint)
+            ep_item.setFlags(ep_item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
+            self._discovery_table.setItem(row, 2, ep_item)
+
+            if player.get("uid") != own_uid:
+                copy_btn = QPushButton("Copy")
+                copy_btn.setMinimumWidth(58)
+                copy_btn.clicked.connect(
+                    lambda checked, ep=endpoint: QApplication.clipboard().setText(ep)
+                )
+                self._discovery_table.setCellWidget(row, 3, copy_btn)
+
+            self._discovery_table.setRowHeight(row, 32)
+
+    def _copy_my_endpoint(self) -> None:
+        if self._public_ip:
+            QApplication.clipboard().setText(f"{self._public_ip}:{self._discovery_port}")
+
+    # ------------------------------------------------------------------
     # Cleanup
     # ------------------------------------------------------------------
 
     def go_offline(self) -> None:
-        """Call on app quit to remove presence from Firestore."""
+        """Call on app quit to remove presence and discovery registration."""
         self._heartbeat_timer.stop()
         self._presence_timer.stop()
+        self._discovery_heartbeat_timer.stop()
+        self._discovery_fetch_timer.stop()
         if self._session and self._db_token and self._current_status != "invisible":
             delete_presence(self._session["uid"], self._db_token)
+        if self._session and self._hosting and self._public_ip:
+            from core.discovery_service import unregister
+            unregister(self._session["uid"])
 
     def _prune_thread(self, thread: QThread) -> None:
         if thread in self._threads:

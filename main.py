@@ -24,6 +24,7 @@ def main() -> None:
     app.setApplicationName("DescentBuddy")
     app.setApplicationVersion("0.1.0")
     app.setOrganizationName("DescentBuddy")
+    app.setDesktopFileName("descentbuddy")
     app.setWindowIcon(_app_icon())
 
     saved_theme = load_config().get("theme", "descent")

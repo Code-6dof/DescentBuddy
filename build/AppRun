@@ -1,4 +1,36 @@
 #!/bin/bash
 # AppRun — entry point for the DescentBuddy AppImage
 APPDIR="$(dirname "$(readlink -f "$0")")"
+
+# Auto-register desktop integration on every launch so the taskbar pin
+# always resolves to the current AppImage location, even after a move or
+# update. Skipped when running outside of an AppImage (no $APPIMAGE set).
+if [ -n "$APPIMAGE" ]; then
+    DESKTOP_FILE="$HOME/.local/share/applications/descentbuddy.desktop"
+    ICON_DIR="$HOME/.local/share/icons/hicolor/256x256/apps"
+    mkdir -p "$HOME/.local/share/applications" "$ICON_DIR"
+
+    cat > "$DESKTOP_FILE" << EOF
+[Desktop Entry]
+Name=Descent Buddy
+Exec=env APPIMAGE_EXTRACT_AND_RUN=1 $APPIMAGE %U
+Icon=descentbuddy
+Type=Application
+Categories=Game;
+Comment=DXX-Redux Companion Launcher for Descent 1 and 2
+Terminal=false
+StartupWMClass=DescentBuddy
+EOF
+
+    [ -f "$APPDIR/descentbuddy.png" ] && \
+        cp -f "$APPDIR/descentbuddy.png" "$ICON_DIR/descentbuddy.png"
+    command -v update-desktop-database &>/dev/null && \
+        update-desktop-database "$HOME/.local/share/applications" 2>/dev/null
+    command -v gtk-update-icon-cache &>/dev/null && \
+        gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || true
+
+    # Tell GNOME/Budgie/Unity/BAMF which .desktop file owns this window.
+    export BAMF_DESKTOP_FILE_HINT="$DESKTOP_FILE"
+fi
+
 exec "$APPDIR/usr/bin/descentbuddy" "$@"
